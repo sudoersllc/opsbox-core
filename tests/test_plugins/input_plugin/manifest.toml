@@ -1,0 +1,6 @@
+[info]
+name = "test_plugin_1"
+module = "test_1"
+class_name = "Test1"
+type = "input"
+uses = ["test_plugin_3"]

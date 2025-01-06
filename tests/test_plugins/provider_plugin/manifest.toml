@@ -1,0 +1,6 @@
+[info]
+name="test_plugin_5"
+module = "test_5"
+class_name = "Test5"
+type = "provider"
+uses = ["rego"]

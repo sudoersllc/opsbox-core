@@ -1,0 +1,41 @@
+site_name: OpsBoxDocs
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting_started/installation.md 
+      - Running OpsBox: getting_started/running.md
+      - Plugin Overview: plugins/plugin_overview.md
+      - Available Plugins: plugins/available_plugins.md
+      - Contributing: contributing.md
+  - Making Plugins:
+      - Basics: plugins/development_basics.md
+      - Making Handlers: plugins/making_handlers.md
+      - Making Providers: plugins/making_providers.md
+      - Making Outputs: plugins/making_outputs.md
+      - Making Checks: plugins/making_checks.md
+  - Testing:
+      - Testing OpsBox: testing/testing.md
+      - Testing Handlers: testing/testing_handlers.md
+      - Testing General Plugins: testing/testing_general_plugins.md
+      - Testing Rego Plugins: testing/testing_rego_plugins.md
+  
+
+plugins:
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [./]
+
+theme:
+  name: readthedocs
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
