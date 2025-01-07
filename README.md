@@ -64,6 +64,8 @@ To run OpsBox with rego plugins, you'll need an OPA server. This is because OpsB
 
 if you don't have OPA installed on your machine, or you dont have a running OPA instance, you can create a docker image for OPA.
 
+Start by [installing docker](https://docs.docker.com/engine/install/).
+
 Create a dockerfile and add the following code:
 ```docker
     # Use the official OPA image
