@@ -17,6 +17,8 @@ If using uv, you can add it:
 
 Note that this version of setup does not include OPA, and that has to be downloaded and run seperately to use rego-based plugins.
 
+If you don't have an OPA server set up yet, follow the instructions in the [Using Rego Plugins](#using-rego-plugins) section.
+
 ## Manual Installation
 ### Prerequisites
 
