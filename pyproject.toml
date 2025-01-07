@@ -1,6 +1,6 @@
 [project]
 name = "opsbox"
-version = "0.1.0"
+version = "0.1.1"
 description = "AI-powered infrastructure management"
 readme = "README.md"
 requires-python = "==3.11.*"
@@ -19,13 +19,15 @@ dependencies = [
     "toml>=0.10.2,<0.11.0",
     "importlib-resources>=6.4.5",
 ]
-#license = {file = "LICENSE"}
+license = {file = "LICENCE"}
 classifiers = [
     "Environment :: Console",
     "Programming Language :: Python :: 3",
     "Intended Audience :: Developers",
     "Topic :: System :: Systems Administration",
-    "Topic :: Utilities"    
+    "Topic :: Utilities",
+    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)"
+    
 ]
 
 [project.urls]
