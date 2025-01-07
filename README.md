@@ -54,6 +54,34 @@ If using UV, run `uv add opsbox`
 
     This command will install all required dependencies specified in `pyproject.toml`.
 
+### Using Rego Plugins
+Open Policy Agent (OPA) is an open-source policy engine that enables organizations to implement policy as code across diverse environments. Its policy language, Rego, allows users to define rules that dictate system and application behavior.
+
+We use rego code to gather details about connected systems, alongside an Open Policy Agent (OPA) server, then format it for consumption by a language model.
+
+#### Create a OPA Policy docker image
+To run OpsBox with rego plugins, you'll need an OPA server. This is because OpsBox uses OPA to enforce policies on all resources that are being managed.
+
+if you don't have OPA installed on your machine, or you dont have a running OPA instance, you can create a docker image for OPA.
+
+Create a dockerfile and add the following code:
+```docker
+    # Use the official OPA image
+    FROM openpolicyagent/opa:latest
+
+    # Expose OPA's default port
+    EXPOSE 8181
+
+    # Run OPA with the specified policy file
+    CMD ["run", "--server", "--addr", "0.0.0.0:8181"]
+```
+
+Navigate to the directory and Build the Docker image:
+```bash
+    docker build -t name_of_file .
+```
+or you can also follow the offical OPA documentation to create the engine: [OPA Documentation](https://www.openpolicyagent.org/docs/latest/)
+
 ## Running Opsbox
 
 Time to see the magic in action!
