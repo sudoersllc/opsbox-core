@@ -1,12 +1,23 @@
 # Installing
 
-You have two options for installing the project:
+You have three options for installing the project:
 
+- **From PyPI**: Install the program using releases from PyPI
 - **Manual Install**: Install the program locally using Python and UV.
 - **Docker Container**: Install the program using a Docker dev container, which includes OPA for policy enforcement.
 
-## Manual Install
+## From PyPI
+We provide pip-installable packages for your convenience.
 
+To install, simply run the following in your desired virtual environment:
+```pip install opsbox```
+
+If using uv, you can add it:
+```uv add opsbox```
+
+Note that this version of setup does not include OPA, and that has to be downloaded and run seperately to use rego-based plugins.
+
+## Manual Installation
 ### Prerequisites
 
 Ensure you have the following installed on your machine:
@@ -18,7 +29,7 @@ Ensure you have the following installed on your machine:
 
 Visit the [official Python website](https://www.python.org/downloads/) and download the latest version of Python for your operating system.
 
-**Installing UV:**
+**Installing UV**
 
 UV can be installed in various ways. The recommended method is to use the installer script:
 
