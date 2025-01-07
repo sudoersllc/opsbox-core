@@ -1,6 +1,6 @@
 [project]
 name = "opsbox"
-version = "0.1.1"
+version = "0.1.2"
 description = "AI-powered infrastructure management"
 readme = "README.md"
 requires-python = "==3.11.*"
@@ -61,7 +61,7 @@ aws = [
     "opsbox-s3-checks>=0.1.2",
     "opsbox-ec2-checks>=0.1.2",
     "opsbox-elb-checks>=0.1.2",
-    "opsbox-iam-checks>=0.1.2",
+    "opsbox-aws-iam-checks>=0.1.2",
     "opsbox-r53-checks>=0.1.2",
     "opsbox-rds-checks>=0.1.2",
     "opsbox-general-handler>=0.1.2",
