@@ -1,13 +1,15 @@
-
-
-
 ### Running OpsBox
-To run Opsbox you just execute the main file with the desired parameters.
+To run Opsbox from a *venv*, simply call the python module `opsbox`.
 
-- **main.py**: this is the main entry point for the OpsBox main.
+With uv, this looks like `uv run opsbox ...`
+Without, it looks like `python -m opsbox ...`
+
+When run *outside of a venv*, use the `main.py` script found in `core`.
+
+An example call to opsbox must at least include the `modules` argument, like so:
 
 ``` bash
-python main.py --modules stray_ebs-oai_cost-text_out --aws_access_key_id "AWS_access_key_id" --aws_secret_access_key "AWS_secrett_key"  --aws_region "AWS_region" --oai_assistant_id "oai_assistant_id" --oai_vector_store_id "oai_vector_store_id" --oai_key "oai_key"
+python core/main.py --modules stray_ebs-oai_cost-text_out --aws_access_key_id "AWS_access_key_id" --aws_secret_access_key "AWS_secrett_key"  --aws_region "AWS_region" --oai_assistant_id "oai_assistant_id" --oai_vector_store_id "oai_vector_store_id" --oai_key "oai_key"
 ```
 
 Make sure you have any of the prerequisite packages for the plugins you want to use!
@@ -35,6 +37,14 @@ stray_ebs-cost_savings-main_out
 ```
 
 Of course, the assistant and the module the check uses will require additional parameters, such as an OpenAI key. Keep reading to figure out how to set these up.
+
+#### Local plugin development
+To develop and use plugins locally, simply point opsbox to the directory where your plugins are located using the `plugin_dir` configuration argument.
+
+As long as the plugins you specify are found in this directory, opsbox will use them instead of the virtual environment-installed packages.
+
+```uv run opsbox ... --plugin_dir ./plugins```
+
 
 #### Open Policy Agent (Rego Only)
 Opsbox uses OPA to upload and execute rego checks.
@@ -79,23 +89,3 @@ Configuration will be looked for based on what modules are specified. Each argum
 2. Then, if it is in the command line arguments, load that.
 3. Finally, if it is nowhere else, enviroment variables are used.
 
-
-### Running OpsBox
-
-OpsBox is initiated through the `main.py` script.
-
-An example call to opsbox must at least include the `modules`, `opa_upload_url`, and `opa_apply_url` arguments, like so:
-
-```bash
-python main.py --modules check_1,check2-assistant_1-assistant_2-output_1,output_2
---opa_upload_url URL --opa_apply_url URL
-```
-
-
-An example pipeline might look like this:
-
-``` bash
-python main.py --modules stray_ebs-openai_cost_recs-text_out --aws_access_key_id "AWS_access_key_id" --aws_secret_access_key "AWS_secrett_key"  --aws_region "AWS_region" --oai_assistant_id "oai_assistant_id" --oai_vector_store_id "oai_vector_store_id" --oai_key "oai_key" --opa_upload_url URL --opa_apply_url URL
-```
-
-You can optionally use the configuration options above instead of command line arguments.
