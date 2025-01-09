@@ -112,13 +112,13 @@ This will launch Opsbox and display the CLI help along with available commands.
 Want to run a specific pipeline? Here's how:
 
 ```bash
-uv run opsbox --modules your_input-your_optional_assistant-your_output --opa_upload_url http://your-opa-upload-url --opa_apply_url http://your-opa-apply-url
+uv run opsbox --modules your_input-your_optional_assistant-your_output --opa_url http://your-opa-url 
 ```
 
 or, if not using UV:
 
 ```bash
-python -m opsbox --modules your_input-your_optional_assistant-your_output --opa_upload_url http://your-opa-upload-url --opa_apply_url http://your-opa-apply-url
+python -m opsbox --modules your_input-your_optional_assistant-your_output --opa_url http://your-opa-url 
 ```
 
 ## Configuration
@@ -138,8 +138,7 @@ Create a file named `.opsbox_conf.json` in your home directory:
   "aws_access_key_id": "YOUR_ACCESS_KEY_ID",
   "aws_secret_access_key": "YOUR_SECRET_ACCESS_KEY",
   "aws_region": "YOUR_AWS_REGION",
-  "opa_upload_url": "http://your-opa-upload-url",
-  "opa_apply_url": "http://your-opa-apply-url"
+  "opa_url": "http://your-opa-url",
 }
 ```
 
@@ -148,7 +147,7 @@ Create a file named `.opsbox_conf.json` in your home directory:
 You can also provide configuration options directly through the command line:
 
 ```bash
-python -m opsbox --modules example_module --aws_access_key_id YOUR_ACCESS_KEY_ID --aws_secret_access_key YOUR_SECRET_ACCESS_KEY --aws_region YOUR_AWS_REGION --opa_upload_url http://your-opa-upload-url --opa_apply_url http://your-opa-apply-url
+python -m opsbox --modules example_module --aws_access_key_id YOUR_ACCESS_KEY_ID --aws_secret_access_key YOUR_SECRET_ACCESS_KEY --aws_region YOUR_AWS_REGION --opa_url http://your-opa-url 
 ```
 
 ## Plugins
