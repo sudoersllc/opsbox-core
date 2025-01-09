@@ -156,7 +156,6 @@ class AppConfig(metaclass=SingletonMeta):
 
         # grab args and initialize basic settings
         conf, flow = self._grab_args()
-        print(conf)
         conf["modules"] = flow.all_modules
         self.basic_settings = EssentialSettings(**conf)
         self.llm_settings = LLMValidator(**conf)

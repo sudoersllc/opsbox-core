@@ -144,6 +144,7 @@ class Registry(metaclass=SingletonMeta):
     project_name = "opsbox"
     handlers = {}
     _active = []
+    _available = []
 
     def __init__(self, flow: PluginFlow, plugin_dir: str | None = None):
         self.flow = flow
@@ -164,6 +165,7 @@ class Registry(metaclass=SingletonMeta):
 
         Args:
             plugin (PluginInfo): The plugin to add as a handler."""
+        logger.trace(f"Adding handler {plugin.name}")
         handles_type = plugin.extra["handler"]["handles"]
         for x in handles_type:
             if x not in self.handlers:
@@ -194,16 +196,21 @@ class Registry(metaclass=SingletonMeta):
                 concat_info = {**plugin_info, **plugin_extra}
 
                 # validate with pydantic
+                if log:
+                    logger.debug(f"Validated plugin {path}")
                 return PluginInfo(**concat_info)
             except ValidationError as e:
                 if log:
                     logger.warning(f"Error validating plugin {path}: {e.errors()}")
+                raise e
             except KeyError:
                 if log:
                     logger.warning(f"Invalid plugin info at {path}")
+                raise KeyError
             except toml.TOMLDecodeError as e:
                 if log:
                     logger.warning(f"Error decoding TOML file {path.name}: {e}")
+                raise e
 
     @property
     def available_plugins(self) -> list[PluginInfo]:
@@ -213,43 +220,49 @@ class Registry(metaclass=SingletonMeta):
         Returns:
             list[PluginInfo]: List of available plugins."""
         available: list[PluginInfo] = []
-        logger.debug("Getting available plugins")
-        if self.plugin_dir is not None:
-            for item in Path(self.plugin_dir).rglob("*.toml"):
-                try:
-                    info = self.read_toml_spec(item, log=True)
-                except Exception:
-                    logger.trace(f"Skipping {item}")
-                    continue
-                if info is not None:
-                    available.append(info)
+        if len(self._available) > 0:
+            logger.trace("Returning cached available plugins")
+            return self._available
         else:
-            for entry_point in importlib.metadata.entry_points(group=f"{self.project_name}.plugins"):
-                try:
-                    plugin_class = entry_point.load()
-                    plugin_obj = plugin_class()
-                    config=None
-                    with contextlib.suppress(AttributeError):
-                        config: type[BaseModel] = plugin_obj.grab_config()
+            logger.debug("Finding available plugins")
+            if self.plugin_dir is not None:
+                for item in Path(self.plugin_dir).rglob("*.toml"):
+                    try:
+                        info = self.read_toml_spec(item, log=False)
+                    except Exception:
+                        logger.trace(f"Skipping {item}")
+                        continue
+                    if info is not None:
+                        available.append(info)
+            else:
+                for entry_point in importlib.metadata.entry_points(group=f"{self.project_name}.plugins"):
+                    try:
+                        plugin_class = entry_point.load()
+                        plugin_obj = plugin_class()
+                        config=None
+                        with contextlib.suppress(AttributeError):
+                            config: type[BaseModel] = plugin_obj.grab_config()
 
-                    plugin_module = getmodule(plugin_class)
-                    logger.trace(f"Searching for manifest in {str(plugin_module)}. It's type is {str(type(plugin_module))}")
-                    with resources.files(plugin_module).joinpath("manifest.toml") as path, open(path, "rb") as toml_file:
-                        plugin_config = toml.load(toml_file)
-                        plugin_raw_info = plugin_config["info"]
-                        plugin_raw_info["toml_path"] = path
-                        plugin_raw_info["extra"] = {k: v for k, v in plugin_config.items() if k != "info"}
-                        plugin_raw_info["config"] = config
-                        plugin_raw_info["plugin_obj"] = plugin_obj
-                        plugin_raw_info["class_name"] = plugin_class.__name__
-                        plugin_raw_info["module"] = plugin_class.__module__
+                        plugin_module = getmodule(plugin_class)
+                        logger.trace(f"Searching for manifest in {str(plugin_module)}. It's type is {str(type(plugin_module))}")
+                        with resources.files(plugin_module).joinpath("manifest.toml") as path, open(path, "rb") as toml_file:
+                            plugin_config = toml.load(toml_file)
+                            plugin_raw_info = plugin_config["info"]
+                            plugin_raw_info["toml_path"] = path
+                            plugin_raw_info["extra"] = {k: v for k, v in plugin_config.items() if k != "info"}
+                            plugin_raw_info["config"] = config
+                            plugin_raw_info["plugin_obj"] = plugin_obj
+                            plugin_raw_info["class_name"] = plugin_class.__name__
+                            plugin_raw_info["module"] = plugin_class.__module__
 
-                        info = PluginInfo(**plugin_raw_info)
-                    available.append(info)
-                except Exception as e:
-                    logger.warning(f"Error loading plugin at entry point {entry_point.name}: {e}")
-        logger.trace(f"Available plugins: {available}")
-        return available
+                            info = PluginInfo(**plugin_raw_info)
+                        available.append(info)
+                    except Exception as e:
+                        logger.warning(f"Error loading plugin at entry point {entry_point.name}: {e}")
+            available_names = [item.name for item in available]
+            logger.debug(f"Available plugins: {available_names}")
+            self._available = available
+            return available
 
     @property
     def active_plugins(self) -> list[PluginInfo]:
@@ -272,7 +285,7 @@ class Registry(metaclass=SingletonMeta):
                     shallow_needed.append(item)
 
             # get the plugins that are needed for the pipeline
-            logger.trace(f"First pass needs: {shallow_needed}")
+            logger.trace(f"Pipeline Needs: {[item.name for item in shallow_needed]}")
 
             # check if we have all the needed plugins
             if len(pipeline_modules) != len(shallow_needed):
@@ -307,7 +320,7 @@ class Registry(metaclass=SingletonMeta):
                 raise FileNotFoundError(f"Could not find needed depencencies: {still_needed}")
 
             # load the plugins that are needed for the other plugins
-            logger.debug(f"Dependencies: {dependecies}")
+            logger.debug(f"Dependencies: {[item.name for item in dependecies]}")
             for item in dependecies:
                 if item.plugin_obj is None:
                     plugin_class = self._grab_plugin_class(Path(item.toml_path).parent, item)
@@ -321,6 +334,7 @@ class Registry(metaclass=SingletonMeta):
             self._active = active
             return active
         else:
+            logger.trace("Returning cached active plugins")
             return self._active
 
     @active_plugins.setter
