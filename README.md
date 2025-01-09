@@ -80,9 +80,14 @@ Create a dockerfile and add the following code:
 
 Navigate to the directory and Build the Docker image:
 ```bash
-    docker build -t name_of_file .
+    docker build -t opa-server .
 ```
 or you can also follow the offical OPA documentation to create the engine: [OPA Documentation](https://www.openpolicyagent.org/docs/latest/)
+
+Finally, run the OPA server as follows:
+```bash
+    docker run -d -p 8181:8181 --name opa-server opa-server
+```
 
 ## Running Opsbox
 
