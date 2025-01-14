@@ -25,7 +25,9 @@ Ready to dive in? Let's get you set up!
 
 Simply run `pip install opsbox` to install the minimal set of opsbox tools.
 
-If using UV, run `uv add opsbox`
+If using UV, initilize your project using `uv init`.
+
+then `uv add opsbox`
 
 *Note: If you want to install AWS plugins, use the aws extras group, `opsbox[aws]`*
 
@@ -45,6 +47,8 @@ If using UV, run `uv add opsbox`
     ```bash
     pip install uv
     ```
+
+
 
     Now, let's install Opsbox:
 
@@ -115,10 +119,20 @@ Want to run a specific pipeline? Here's how:
 uv run opsbox --modules your_input-your_optional_assistant-your_output --opa_url http://your-opa-url 
 ```
 
+A recommended command to start is stray_ebs make sure you have opsbox[aws] and opsbox-cli-output installed
+
+```bash
+uv run opsbox --modules stray_ebs-cli_out --opa_url http://localhost:8181/ --aws_access_key_id {YOUR_ACCESS_KEY_ID} --aws_secret_access_key {YOUR_SECRET_ACCESS_KEY} --aws_region us-east-1
+```
+
 or, if not using UV:
 
 ```bash
 python -m opsbox --modules your_input-your_optional_assistant-your_output --opa_url http://your-opa-url 
+```
+
+```bash
+python -m opsbox --modules stray_ebs-cli_out --opa_url http://localhost:8181/ --aws_access_key_id {YOUR_ACCESS_KEY_ID} --aws_secret_access_key {YOUR_SECRET_ACCESS_KEY} --aws_region us-east-1
 ```
 
 ## Configuration
@@ -140,6 +154,11 @@ Create a file named `.opsbox_conf.json` in your home directory:
   "aws_region": "YOUR_AWS_REGION",
   "opa_url": "http://your-opa-url",
 }
+```
+
+To run a command with a config it will follow this format
+```bash
+uv run opsbox --modules stray_ebs-cli_out --config config.json
 ```
 
 ### Command-Line Arguments
