@@ -82,6 +82,7 @@ Create a dockerfile and add the following code:
     CMD ["run", "--server", "--addr", "0.0.0.0:8181"]
 ```
 
+
 Navigate to the directory and Build the Docker image:
 ```bash
     docker build -t opa-server .
@@ -91,6 +92,13 @@ or you can also follow the offical OPA documentation to create the engine: [OPA 
 Finally, run the OPA server as follows:
 ```bash
     docker run -d -p 8181:8181 --name opa-server opa-server
+```
+
+Or the docker image can be found here
+(https://hub.docker.com/r/openpolicyagent/opa/)
+
+```bash
+*docker run -d -p 8181:8181 --name opa openpolicyagent/opa run --server --addr=0.0.0.0:8181*
 ```
 
 ## Running Opsbox
