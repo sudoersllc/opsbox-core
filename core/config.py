@@ -29,13 +29,13 @@ class EssentialSettings(BaseModel):
     The essential settings are the settings that are required to run the application.
     """
 
-    modules: list[str] | str = Field(..., description="List of modules to load", required=True)
+    modules: list[str] | str = Field(..., description="List of modules to load in pipeline format.", required=True)
     config: str | None = Field(
-        default=find_config_file(".opsbox_conf.json"), description="Path to the configuration file", required=False
+        default=find_config_file(".opsbox_conf.json"), description="Path to the configuration file.", required=False
     )
-    plugin_dir: str | None = Field(None, description="The directory to load plugins from", required=False)
-    log_level: str | None = Field(None, description="The logging level", required=False)
-    log_file: str | None = Field(None, description="The logging file", required=False)
+    plugin_dir: str | None = Field(None, description="Directory to load plugins from instead of environment. Useful for local development.", required=False)
+    log_level: str | None = Field(None, description="Desired logging level. One of 'INFO', 'TRACE', 'DEBUG', 'WARNING', or 'CRITICAL'. Default is 'INFO'", required=False)
+    log_file: str | None = Field(None, description="Path to the desired logging file.", required=False)
 
 
 class LLMValidator(BaseModel):

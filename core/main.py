@@ -1,5 +1,15 @@
 from core.config import AppConfig
-from core.cli import console, display_missing_arguments_error, print_pipeline_help, print_available_plugins, print_basic_args_help, print_opsbox_banner
+from core.cli import (
+    console,
+    display_missing_arguments_error,
+    print_pipeline_help,
+    print_available_plugins,
+    print_basic_args_help,
+    print_opsbox_banner,
+    print_pipeline_building_help,
+    print_config_help,
+    print_welcome_message,
+)
 from core.plugins import Registry
 from loguru import logger
 import sys
@@ -20,7 +30,6 @@ def main():
     # start logging
     logger.remove()
 
-
     if "--debug-init" in argv:
         start_logging(log_level="DEBUG")
         logger.debug("Init. debug enabled")
@@ -39,6 +48,9 @@ def main():
             else:
                 available_plugins = app_config.fetch_available_plugins()
                 print_opsbox_banner()
+                print_welcome_message()
+                print_pipeline_building_help()
+                print_config_help()
                 print_basic_args_help()
                 print_available_plugins(available_plugins)
                 sys.exit(1)
@@ -48,6 +60,12 @@ def main():
             start_logging(app_config.basic_settings.log_level, app_config.basic_settings.log_file)
         else:
             start_logging()
+    except IndexError as _:
+        print_opsbox_banner()
+        display_text = """[bold red]It seems like you have your pipeline incorrectly specified! Please check the help below.\n[/bold red]"""
+        console.print(display_text)
+        print_pipeline_building_help()
+        return 1
     except JSONDecodeError as e:
         console.print(f"[bold red]Error validating JSON configuration: [/bold red] {e}")
         return 1
