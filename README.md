@@ -98,7 +98,7 @@ Or the docker image can be found here
 (https://hub.docker.com/r/openpolicyagent/opa/)
 
 ```bash
-*docker run -d -p 8181:8181 --name opa openpolicyagent/opa run --server --addr=0.0.0.0:8181*
+    docker run -d -p 8181:8181 --name opa openpolicyagent/opa run --server --addr=0.0.0.0:8181*
 ```
 
 ## Running Opsbox
