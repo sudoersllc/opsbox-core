@@ -1,5 +1,5 @@
 from core.config import AppConfig
-from core.cli import console, display_missing_arguments_error, print_pipeline_help, print_available_plugins
+from core.cli import console, display_missing_arguments_error, print_pipeline_help, print_available_plugins, print_basic_args_help, print_opsbox_banner
 from core.plugins import Registry
 from loguru import logger
 import sys
@@ -38,6 +38,8 @@ def main():
                 sys.exit(1)
             else:
                 available_plugins = app_config.fetch_available_plugins()
+                print_opsbox_banner()
+                print_basic_args_help()
                 print_available_plugins(available_plugins)
                 sys.exit(1)
         else:
