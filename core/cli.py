@@ -27,8 +27,37 @@ def display_missing_arguments_error(modules: list[str], arguments: list[tuple[st
 
     console.print(table)
 
+ascii_art = """
+  ____  ___  _______  ____  _  __
+ / __ \\/ _ \\/ __/ _ )/ __ \\| |/_/
+/ /_/ / ___/\\ \\/ _  / /_/ />  <  
+\\____/_/  /___/____/\\____/_/|_|  
+                                 
+"""
 
-def print_help(modules: list[str], models: list[tuple[str, str, FieldInfo]]):
+def print_available_plugins(plugins: list[tuple[str, str]]):
+    """Print a list of available plugins.
+
+    Args:
+        plugins (list[tuple[str, str]]): A list of tuples containing the plugin name and type.
+    """
+
+    light_blue_text = Text(ascii_art, style="cyan", justify="center")
+    console.print(light_blue_text)
+
+    table = Table(
+        title="[bold red]Available Plugins[/bold red]",
+        caption="[bold]Here are a list of available plugins to use in your pipeline.[/bold]",
+    )
+    table.add_column("Plugin Name", justify="left", style="cyan")
+    table.add_column("Type", justify="left", style="green")
+
+    for plugin_name, plugin_type in plugins:
+        table.add_row(plugin_name, plugin_type)
+
+    console.print(table)
+
+def print_pipeline_help(modules: list[str], models: list[tuple[str, str, FieldInfo]]):
     """Print the help for a given pipeline.
 
     Args:
@@ -36,13 +65,6 @@ def print_help(modules: list[str], models: list[tuple[str, str, FieldInfo]]):
         models (list[tuple[type[BaseModel], str]]): A list of tuples containing the model and plugin name.
     """
     # ASCII Banner
-    ascii_art = """
-  ____  ___  _______  ____  _  __
- / __ \\/ _ \\/ __/ _ )/ __ \\| |/_/
-/ /_/ / ___/\\ \\/ _  / /_/ />  <  
-\\____/_/  /___/____/\\____/_/|_|  
-                                 
-"""
 
     # Create a Text object and add the ASCII art with light blue color
     light_blue_text = Text(ascii_art, style="cyan", justify="center")
@@ -70,7 +92,7 @@ Reconfigure your pipeline to see more arguments.[/bold]""",
 
     # Reminder to view documentation
     doc_str = (
-        "\n[bold]For more information, please refer to the documentation found when running "
-        "`mkdocs serve` from the [italic]root of the directory.[/italic][/bold]"
+        "\n[bold]For more information, please refer to the documentation found at the "
+        "`opsbox-docs` repo.[/bold]"
     )
     console.print(doc_str)
