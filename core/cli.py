@@ -30,7 +30,8 @@ For instance, if we wanted to check for stray EBS volumes and output the results
 
 [bold]opsbox --modules stray_ebs-cost_savings-cli_out ...[/bold]
 """,
-style="yellow")
+    style="yellow",
+)
 
 config_help = Text.from_markup(
     """Opsbox can be configured through either:
@@ -38,9 +39,11 @@ config_help = Text.from_markup(
     - Environment variables, with the arguments as the variable names, or
     - Command line arguments, with the arguments as the flags accompanied by their respective values.
 
-Default values can be set in [bold]~/.opsbox.json[/bold], which will be loaded upon startup if no other configuration is provided.
+First, command line values will be loaded, then any JSON file sepcified by the [bold]--config[/bold] flag, then environment variables.
+
+Default values can be set in [bold]~/.opsbox.json[/bold], which will be loaded upon startup before other configuration files.
     """,
-    style="cyan"
+    style="cyan",
 )
 
 welcome_message = Text.from_markup(
@@ -48,9 +51,8 @@ welcome_message = Text.from_markup(
     
 If you need help with a specific pipeline, please use the [bold]--help[/bold] flag alongside the pipeline to get more information.
     """,
-    style="green"
+    style="green",
 )
-    
 
 
 def display_missing_arguments_error(modules: list[str], arguments: list[tuple[str, str, FieldInfo]]):
@@ -61,10 +63,12 @@ def display_missing_arguments_error(modules: list[str], arguments: list[tuple[st
         arguments (list[tuple[str, str, FieldInfo]]): A list of tuples containing the missing argument name,
             plugin name, and field info.
     """
+    markup = f"[bold red]You are missing arguments for pipeline [/bold red][bold purple4]{'-'.join(modules)}[/bold purple4]!\n\n"
+    console.print(markup)
 
     table = Table(
-        title=f"[bold red]Missing Arguments for pipeline [/bold red][bold purple4]{'-'.join(modules)}[/bold purple4]",
-        caption="[bold]Please provide the following arguments to continue.[/bold]",
+        title=f"[bold red]Missing Arguments for pipeline [bold purple4]{'-'.join(modules)}[/bold purple4][/bold red]",
+        caption="[bold]Please add the following arguments to your configuration to continue.[/bold]",
         title_justify="center",
     )
     table.add_column("Argument Name", justify="left", style="cyan")
@@ -75,41 +79,59 @@ def display_missing_arguments_error(modules: list[str], arguments: list[tuple[st
         table.add_row(arg_name, plugin_name, field_info.description)
 
     console.print(table)
+    console.print("\n")
+    print_config_help()
 
-def print_available_plugins(plugins: list[tuple[str, str]]):
+
+def print_available_plugins(plugins: list[tuple[str, str]], excluded: list[str] = ["handler", "provider"], plugin_dir: str = None):
     """Print a list of available plugins.
 
     Args:
         plugins (list[tuple[str, str]]): A list of tuples containing the plugin name and type.
     """
-    table = Table(
-        title_justify="center",
-        caption="[bold]Here is a list of plugins available in your environment.[/bold]",
-    )
-    table.add_column("Plugin Name", justify="left", style="cyan")
-    table.add_column("Type", justify="left", style="green")
-
-    excluded = ["handler", "provider"]
+    # Sort the plugins by type
     plugins = [plugins for plugins in plugins if plugins[1] not in excluded]
     plugins.sort(key=lambda x: x[1])
     plugins.reverse()
 
-    for plugin_name, plugin_type in plugins:
-        table.add_row(plugin_name, plugin_type)
-
-    table = Align.left(table, vertical="middle")
     console.rule("[bold red]Environment Plugins[/bold red]")
-    console.print(table)
+    if len(plugins) == 0:  # No plugins found
+        if plugin_dir:
+            markup = f"""[italic violet]Hmm, it seems like there are no plugins in the directory {plugin_dir}!
+
+Check your plugin directiory and try again! [/italic violet]"""
+        else:
+            markup = """[italic violet]Hmm, it seems like there are no plugins in your virtual environment!
+            
+Try installing some opsbox packages into your virtual environment or specifying a plugin directory using the plugin_dir argument. [/italic violet]"""
+        console.print(markup)
+    else:  # Plugins found, print table of plugins
+        caption = f"[bold]Here is a list of plugins available in {plugin_dir}.[/bold]" if plugin_dir else "[bold]Here is a list of plugins available in your virtual environment.[/bold]"
+        table = Table(
+            title_justify="center",
+            caption=caption,
+        )
+        table.add_column("Plugin Name", justify="left", style="cyan")
+        table.add_column("Type", justify="left", style="green")
+
+        for plugin_name, plugin_type in plugins:
+            table.add_row(plugin_name, plugin_type)
+
+        table = Align.left(table, vertical="middle")
+        console.print(table)
+
 
 def print_pipeline_building_help():
     """Print the pipeline building help."""
     console.rule("[bold red]Pipeline Building Help[/bold red]")
     console.print(pipeline_building_help)
 
+
 def print_config_help():
     """Print the configuration help."""
     console.rule("[bold red]Configuration Help[/bold red]")
     console.print(config_help)
+
 
 def print_opsbox_banner():
     """Print the OpsBox banner."""
@@ -119,13 +141,15 @@ def print_opsbox_banner():
 
     console.print(light_blue_text)
 
+
 def print_welcome_message():
     """Print the welcome message."""
     console.print(welcome_message)
 
+
 def print_basic_args_help():
     """Print the help for the basic arguments."""
-    
+
     table = Table(
         caption="[bold]Here is a list of core arguments for the application.[/bold]",
     )
@@ -135,7 +159,7 @@ def print_basic_args_help():
 
     for field_name, field_info in EssentialSettings.__fields__.items():
         table.add_row(field_name, field_info.description, str(field_info.is_required()))
-    
+
     table = Align.left(table, vertical="middle")
 
     console.rule("[bold red]Opsbox Core Arguments[/bold red]")
@@ -175,8 +199,5 @@ Reconfigure your pipeline to see more arguments.[/bold]""",
     console.print(table)
 
     # Reminder to view documentation
-    doc_str = (
-        "\n[bold]For more information, please refer to the documentation found at the "
-        "`opsbox-docs` repo.[/bold]"
-    )
+    doc_str = "\n[bold]For more information, please refer to the documentation found at the " "`opsbox-docs` repo.[/bold]"
     console.print(doc_str)

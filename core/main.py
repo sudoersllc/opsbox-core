@@ -10,7 +10,7 @@ from core.cli import (
     print_config_help,
     print_welcome_message,
 )
-from core.plugins import Registry
+from core.plugins import Registry, PluginNotFoundError
 from loguru import logger
 import sys
 from json import JSONDecodeError
@@ -21,7 +21,8 @@ from sys import argv
 def start_logging(log_level: str = "INFO", log_file: str = None):
     """Start logging to a file."""
     logger.add(sys.stdout, level=log_level, colorize=True, diagnose=True, enqueue=True)
-    logger.add(log_file, level=log_level, rotation="10 MB", compression="zip", serialize=True)
+    if log_file is not None:
+        logger.add(log_file, level=log_level, rotation="10 MB", compression="zip", serialize=True)
     logger.debug("Logging started")
 
 
@@ -52,7 +53,7 @@ def main():
                 print_pipeline_building_help()
                 print_config_help()
                 print_basic_args_help()
-                print_available_plugins(available_plugins)
+                print_available_plugins(available_plugins, plugin_dir=app_config.basic_settings.plugin_dir)
                 sys.exit(1)
         else:
             still_needed = app_config.load()
@@ -67,17 +68,39 @@ def main():
         print_pipeline_building_help()
         return 1
     except JSONDecodeError as e:
-        console.print(f"[bold red]Error validating JSON configuration: [/bold red] {e}")
+        print_opsbox_banner()
+        console.print(f"[bold red]It seems like your configuration JSON is malformed![/bold red]\nError: {e}")
         return 1
     except FileNotFoundError as e:
-        console.print(f"[bold red]Error loading configuration file: [/bold red] {e}")
+        print_opsbox_banner()
+        console.print(f"[bold red]It seems like you gave an incorrect path to your configuration![/bold red]\n{e}\n")
+        print_config_help()
+        return 1
+    except PluginNotFoundError as e:
+        print_opsbox_banner()
+        if app_config.basic_settings.plugin_dir is not None:
+            markup = f"""[bold red]It seems like one or more plugins you specified were not able to be found![/bold red]
+
+[bold red]Please check the active plugin_dir {app_config.basic_settings.plugin_dir}.[/bold red]
+
+Error: {e}
+"""
+        else:
+            markup = f"""[bold red]It seems like one or more plugins you specified were not able to be found![/bold red]
+
+[bold red]Please check the virtual environment for your desired plugin packages.[/bold red]
+
+Error: {e}
+"""
+        console.print(markup)
+        print_available_plugins(app_config.fetch_available_plugins(), plugin_dir=app_config.basic_settings.plugin_dir)
         return 1
     if still_needed:
+        print_opsbox_banner()
         modules = app_config.basic_settings.modules
         display_missing_arguments_error(modules, still_needed)
         return 1
 
-    # add stdout logger
     pipeline = Registry().produce_pipeline()
     Registry().process_pipeline(pipeline)
 
