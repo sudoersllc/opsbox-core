@@ -1,11 +1,11 @@
 name: ruff
 on:
-  push:
+  pull_request:
     branches:
       - main
       - staging
       - dev
-      
+
 permissions: read-all
 jobs:
   build:
