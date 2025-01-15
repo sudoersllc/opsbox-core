@@ -104,13 +104,17 @@ def print_missing_arguments_error(modules: list[str], arguments: list[tuple[str,
     print_config_help()
 
 
-def print_available_plugins(plugins: list[tuple[str, str]], excluded: list[str] = ["handler", "provider"], plugin_dir: str = None):
+def print_available_plugins(plugins: list[tuple[str, str]], excluded: list[str] | None = ["handler", "provider"], plugin_dir: str = None):
     """Print a list of available plugins.
 
     Args:
         plugins (list[tuple[str, str]]): A list of tuples containing the plugin name and type.
+        excluded (list[str], optional): A list of plugin types to exclude. Defaults to ["handler", "provider"].
+        plugin_dir (str, optional): The plugin directory that was searched. Defaults to None.
     """
     # Sort the plugins by type
+    if excluded is None:
+        excluded = []
     plugins = [plugins for plugins in plugins if plugins[1] not in excluded]
     plugins.sort(key=lambda x: x[1])
     plugins.reverse()

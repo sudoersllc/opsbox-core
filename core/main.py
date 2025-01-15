@@ -45,6 +45,14 @@ def main():
         logger.debug("Initialization debugging enabled!")
         del argv[argv.index("--init-debug")]
 
+    # check for see-all flag
+    if "--see-all" in argv:
+        del argv[argv.index("--see-all")]
+        excluded = None
+    else:
+        excluded = ["handler", "provider"]
+
+    # setup config singleton
     app_config = AppConfig()
 
     # load help and config
@@ -63,8 +71,8 @@ def main():
                 print_welcome_message()
                 print_pipeline_building_help()
                 print_config_help()
-                print_basic_args_help()
-                print_available_plugins(available_plugins, plugin_dir=app_config.basic_settings.plugin_dir)
+                print_basic_args_help()                    
+                print_available_plugins(available_plugins, excluded=excluded, plugin_dir=app_config.basic_settings.plugin_dir)
                 sys.exit(1)
         else:  # if args are passed, load the config
             missing_fields = app_config.load()
@@ -93,7 +101,7 @@ def main():
     except PluginNotFoundError as e:  # if a plugin is not found
         print_opsbox_banner()
         print_plugin_not_found_error(app_config.basic_settings.plugin_dir, e)        
-        print_available_plugins(app_config.fetch_available_plugins(), plugin_dir=app_config.basic_settings.plugin_dir)
+        print_available_plugins(app_config.fetch_available_plugins(), excluded=excluded, plugin_dir=app_config.basic_settings.plugin_dir)
         return 1
     if missing_fields:  # if there are still missing fields
         print_opsbox_banner()
