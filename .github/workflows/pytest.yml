@@ -33,7 +33,7 @@ jobs:
         run: uv sync
 
       - name: Run Pytest tests
-        run: uv run pytest . --ignore=./tests/integration--html=report.html --self-contained-html -s
+        run: uv run pytest . --ignore=./tests/integration --html=report.html --self-contained-html -s
 
       - name: Upload Pytest report
         uses: actions/upload-artifact@v4
