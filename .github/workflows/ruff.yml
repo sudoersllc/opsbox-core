@@ -5,12 +5,7 @@ on:
       - main
       - staging
       - dev
-  pull_request:
-    branches:
-      - main
-      - staging
-      - dev
-
+      
 permissions: read-all
 jobs:
   build:
