@@ -54,8 +54,29 @@ If you need help with a specific pipeline, please use the [bold]--help[/bold] fl
     style="green",
 )
 
+def print_plugin_not_found_error(plugin_dir: str | None, e: Exception):
+        """Print an error message for when a plugin is not found.
+        
+        Args:
+            plugin_dir (str | None): The plugin directory that was searched.
+            e (Exception): The exception that was raised."""
+        if plugin_dir is not None:
+            markup = f"""[bold red]It seems like one or more plugins you specified were not able to be found![/bold red]
 
-def display_missing_arguments_error(modules: list[str], arguments: list[tuple[str, str, FieldInfo]]):
+[bold red]Please check the active plugin_dir {plugin_dir}.[/bold red]
+
+Error: {e}
+"""
+        else:
+            markup = f"""[bold red]It seems like one or more plugins you specified were not able to be found![/bold red]
+
+[bold red]Please check the virtual environment for your desired plugin packages.[/bold red]
+
+Error: {e}
+"""
+        console.print(markup)
+
+def print_missing_arguments_error(modules: list[str], arguments: list[tuple[str, str, FieldInfo]]):
     """Display a table of missing arguments for a given pipeline.
 
     Args:
