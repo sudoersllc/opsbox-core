@@ -31,10 +31,9 @@ def main():
     # start logging
     logger.remove()
 
-    if "--debug-init" in argv:
+    if "--init-debug" in argv:
         start_logging(log_level="DEBUG")
-        logger.debug("Init. debug enabled")
-        del argv[argv.index("--debug-init")]
+        logger.debug("Initialization debugging enabled!")
 
     # parse args
     app_config = AppConfig()

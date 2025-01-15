@@ -36,7 +36,7 @@ class EssentialSettings(BaseModel):
     plugin_dir: str | None = Field(None, description="Directory to load plugins from instead of environment. Useful for local development.", required=False)
     log_level: str | None = Field(None, description="Desired logging level. One of 'INFO', 'TRACE', 'DEBUG', 'WARNING', or 'CRITICAL'. Default is 'INFO'", required=False)
     log_file: str | None = Field(None, description="Path to the desired logging file.", required=False)
-
+    init_debug: bool = Field(False, description="Enable debug logging during initialization.", required=False)
 
 class LLMValidator(BaseModel):
     """
