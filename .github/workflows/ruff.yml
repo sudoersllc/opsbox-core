@@ -1,0 +1,32 @@
+name: ruff
+on:
+  push:
+    branches:
+      - main
+      - staging
+      - dev
+      
+permissions: read-all
+jobs:
+  build:
+    name: Run Ruff
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }} environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install Poetry
+        run: pip install uv
+
+      - name: Install requirements
+        run: uv tool install ruff
+
+      - name: Run Ruff lint
+        run: uv tool run ruff check .
