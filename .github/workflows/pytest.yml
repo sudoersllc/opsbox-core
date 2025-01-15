@@ -33,10 +33,10 @@ jobs:
         run: uv sync
 
       - name: Run Pytest tests
-        run: uv run pytest . --ignore=./tests/integration
+        run: uv run pytest . --ignore=./tests/integration--html=report.html --self-contained-html -s
 
       - name: Upload Pytest report
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.python-version }}_Pytest
-          path: Scripts/pytest_results.html
+          path: report.html
