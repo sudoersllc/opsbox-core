@@ -21,7 +21,7 @@ from sys import argv
 def start_logging(log_level: str = "INFO", log_file: str = None):
     """Start logging to a file."""
     logger.add(sys.stdout, level=log_level, colorize=True, diagnose=True, enqueue=True)
-    logger.add("./log.json", level=log_level, rotation="10 MB", compression="zip", serialize=True)
+    logger.add(log_file, level=log_level, rotation="10 MB", compression="zip", serialize=True)
     logger.debug("Logging started")
 
 
