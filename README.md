@@ -25,7 +25,9 @@ Ready to dive in? Let's get you set up!
 
 Simply run `pip install opsbox` to install the minimal set of opsbox tools.
 
-If using UV, run `uv add opsbox`
+If using UV, initilize your project using `uv init`.
+
+then `uv add opsbox`
 
 *Note: If you want to install AWS plugins, use the aws extras group, `opsbox[aws]`*
 
@@ -46,6 +48,8 @@ If using UV, run `uv add opsbox`
     pip install uv
     ```
 
+
+
     Now, let's install Opsbox:
 
     ```bash
@@ -53,6 +57,49 @@ If using UV, run `uv add opsbox`
     ```
 
     This command will install all required dependencies specified in `pyproject.toml`.
+
+### Using Rego Plugins
+Open Policy Agent (OPA) is an open-source policy engine that enables organizations to implement policy as code across diverse environments. Its policy language, Rego, allows users to define rules that dictate system and application behavior.
+
+We use rego code to gather details about connected systems, alongside an Open Policy Agent (OPA) server, then format it for consumption by a language model.
+
+#### Create a OPA Policy docker image
+To run OpsBox with rego plugins, you'll need an OPA server. This is because OpsBox uses OPA to enforce policies on all resources that are being managed.
+
+if you don't have OPA installed on your machine, or you dont have a running OPA instance, you can create a docker image for OPA.
+
+Start by [installing docker](https://docs.docker.com/engine/install/).
+
+Create a dockerfile and add the following code:
+```docker
+    # Use the official OPA image
+    FROM openpolicyagent/opa:latest
+
+    # Expose OPA's default port
+    EXPOSE 8181
+
+    # Run OPA with the specified policy file
+    CMD ["run", "--server", "--addr", "0.0.0.0:8181"]
+```
+
+
+Navigate to the directory and Build the Docker image:
+```bash
+    docker build -t opa-server .
+```
+or you can also follow the offical OPA documentation to create the engine: [OPA Documentation](https://www.openpolicyagent.org/docs/latest/)
+
+Finally, run the OPA server as follows:
+```bash
+    docker run -d -p 8181:8181 --name opa-server opa-server
+```
+
+Or the docker image can be found here
+(https://hub.docker.com/r/openpolicyagent/opa/)
+
+```bash
+    docker run -d -p 8181:8181 --name opa openpolicyagent/opa run --server --addr=0.0.0.0:8181*
+```
 
 ## Running Opsbox
 
@@ -77,13 +124,23 @@ This will launch Opsbox and display the CLI help along with available commands.
 Want to run a specific pipeline? Here's how:
 
 ```bash
-uv run opsbox --modules your_input-your_optional_assistant-your_output --opa_upload_url http://your-opa-upload-url --opa_apply_url http://your-opa-apply-url
+uv run opsbox --modules your_input-your_optional_assistant-your_output --opa_url http://your-opa-url 
+```
+
+A recommended command to start is stray_ebs make sure you have opsbox[aws] and opsbox-cli-output installed
+
+```bash
+uv run opsbox --modules stray_ebs-cli_out --opa_url http://localhost:8181/ --aws_access_key_id {YOUR_ACCESS_KEY_ID} --aws_secret_access_key {YOUR_SECRET_ACCESS_KEY} --aws_region us-east-1
 ```
 
 or, if not using UV:
 
 ```bash
-python -m opsbox --modules your_input-your_optional_assistant-your_output --opa_upload_url http://your-opa-upload-url --opa_apply_url http://your-opa-apply-url
+python -m opsbox --modules your_input-your_optional_assistant-your_output --opa_url http://your-opa-url 
+```
+
+```bash
+python -m opsbox --modules stray_ebs-cli_out --opa_url http://localhost:8181/ --aws_access_key_id {YOUR_ACCESS_KEY_ID} --aws_secret_access_key {YOUR_SECRET_ACCESS_KEY} --aws_region us-east-1
 ```
 
 ## Configuration
@@ -103,9 +160,13 @@ Create a file named `.opsbox_conf.json` in your home directory:
   "aws_access_key_id": "YOUR_ACCESS_KEY_ID",
   "aws_secret_access_key": "YOUR_SECRET_ACCESS_KEY",
   "aws_region": "YOUR_AWS_REGION",
-  "opa_upload_url": "http://your-opa-upload-url",
-  "opa_apply_url": "http://your-opa-apply-url"
+  "opa_url": "http://your-opa-url",
 }
+```
+
+To run a command with a config it will follow this format
+```bash
+uv run opsbox --modules stray_ebs-cli_out --config config.json
 ```
 
 ### Command-Line Arguments
@@ -113,7 +174,7 @@ Create a file named `.opsbox_conf.json` in your home directory:
 You can also provide configuration options directly through the command line:
 
 ```bash
-python -m opsbox --modules example_module --aws_access_key_id YOUR_ACCESS_KEY_ID --aws_secret_access_key YOUR_SECRET_ACCESS_KEY --aws_region YOUR_AWS_REGION --opa_upload_url http://your-opa-upload-url --opa_apply_url http://your-opa-apply-url
+python -m opsbox --modules example_module --aws_access_key_id YOUR_ACCESS_KEY_ID --aws_secret_access_key YOUR_SECRET_ACCESS_KEY --aws_region YOUR_AWS_REGION --opa_url http://your-opa-url 
 ```
 
 ## Plugins
