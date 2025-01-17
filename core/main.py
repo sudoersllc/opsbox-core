@@ -54,20 +54,20 @@ def main():
         excluded = None
 
     # check for help flag
-    help = False
+    help_flag = False
     if "--help" in argv or len(argv) == 1:  # if no args are passed or --help is passed
         with contextlib.suppress(ValueError):  # remove --help from argv
             del argv[argv.index("--help")]
-        help = True
+        help_flag = True
 
     # load help and config
     try:
         # setup config singleton
         app_config = AppConfig()
         app_config.init_basic_settings()
-        logger.remove()
+        logger.remove() # re-initialize logger
         start_logging(app_config.basic_settings.log_level, app_config.basic_settings.log_file)
-        if help:  # if --help is passed, print help
+        if help_flag:  # if --help is passed, print help
             missing_fields = app_config.fetch_missing_fields()
             if missing_fields is not None:  # if there are still missing fields, print pipeline help
                 modules = app_config.basic_settings.modules
