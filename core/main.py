@@ -20,13 +20,15 @@ from sys import argv
 import contextlib
 
 
-def start_logging(log_level: str = "INFO", log_file: str = None):
+def start_logging(log_level: str | None = None, log_file: str | None = None):
     """Start logging to a file.
 
     Args:
-        log_level (str): The log level to use.
-        log_file (str): The file to log to.
+        log_level (str, optional): The log level to log at. Defaults to "INFO".
+        log_file (str, optional): The log file to log to. Defaults to None
     """
+    if log_level is None:
+        log_level = "INFO"
     logger.add(sys.stdout, level=log_level, colorize=True, diagnose=True, enqueue=True)
     logger.debug("Started logging to stdout.")
     if log_file is not None:
@@ -46,20 +48,26 @@ def main():
         del argv[argv.index("--init-debug")]
 
     # check for see-all flag
+    excluded = ["handler", "provider"]
     if "--see-all" in argv:
         del argv[argv.index("--see-all")]
         excluded = None
-    else:
-        excluded = ["handler", "provider"]
 
-    # setup config singleton
-    app_config = AppConfig()
+    # check for help flag
+    help = False
+    if "--help" in argv or len(argv) == 1:  # if no args are passed or --help is passed
+        with contextlib.suppress(ValueError):  # remove --help from argv
+            del argv[argv.index("--help")]
+        help = True
 
     # load help and config
     try:
-        if "--help" in argv or len(argv) == 1:  # if no args are passed or --help is passed
-            with contextlib.suppress(ValueError):  # remove --help from argv
-                del argv[argv.index("--help")]
+        # setup config singleton
+        app_config = AppConfig()
+        app_config.init_basic_settings()
+        logger.remove()
+        start_logging(app_config.basic_settings.log_level, app_config.basic_settings.log_file)
+        if help:  # if --help is passed, print help
             missing_fields = app_config.fetch_missing_fields()
             if missing_fields is not None:  # if there are still missing fields, print pipeline help
                 modules = app_config.basic_settings.modules
@@ -76,12 +84,6 @@ def main():
                 sys.exit(1)
         else:  # if args are passed, load the config
             missing_fields = app_config.load()
-
-        # start logging
-        if app_config.basic_settings.log_level is not None:
-            start_logging(app_config.basic_settings.log_level, app_config.basic_settings.log_file)
-        else:
-            start_logging()
     except IndexError as _:  # if the pipeline is incorrectly specified
         print_opsbox_banner()
         display_text = """[bold red]It seems like you have your pipeline incorrectly specified! Please check the help below.\n[/bold red]"""
