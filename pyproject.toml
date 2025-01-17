@@ -1,6 +1,6 @@
 [project]
 name = "opsbox"
-version = "0.1.5"
+version = "0.1.6"
 description = "AI-powered infrastructure management"
 readme = "README.md"
 requires-python = "==3.11.*"
@@ -31,12 +31,11 @@ classifiers = [
 ]
 
 [project.urls]
-# Change these later
-Homepage = "https://example.com"
-Documentation = "https://example.com"
-Repository = "https://github.com/me/spam.git"
-Issues = "https://github.com/me/spam/issues"
-Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
+#Homepage = "https://example.com"
+Documentation = "https://sudoersllc.github.io/opsbox-docs/core/"
+Repository = "https://github.com/sudoersllc/opsbox-core.git"
+Issues = "https://github.com/sudoersllc/opsbox-core/issues"
+#Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
 
 
 [project.scripts]

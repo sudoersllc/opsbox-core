@@ -29,12 +29,15 @@ class EssentialSettings(BaseModel):
     The essential settings are the settings that are required to run the application.
     """
 
-    modules: list[str] | str = Field(..., description="List of modules to load", required=True)
+    modules: list[str] | str = Field(..., description="List of modules to load in pipeline format.", required=True)
     config: str | None = Field(
-        default=find_config_file(".opsbox_conf.json"), description="Path to the configuration file", required=False
+        default=find_config_file(".opsbox_conf.json"), description="Path to the configuration file.", required=False
     )
-    plugin_dir: str | None = Field(None, description="The directory to load plugins from", required=False)
-
+    plugin_dir: str | None = Field(None, description="Directory to load plugins from instead of environment. Useful for local development.", required=False)
+    log_level: str | None = Field(None, description="Desired logging level. One of 'INFO', 'TRACE', 'DEBUG', 'WARNING', or 'CRITICAL'. Default is 'INFO'", required=False)
+    log_file: str | None = Field(None, description="Path to the desired logging file.", required=False)
+    init_debug: bool = Field(False, description="Enable debug logging during initialization. Used as a flag.", required=False)
+    see_all: bool = Field(False, description="Show all plugins, including handlers and providers. Used as a flag.", required=False)
 
 class LLMValidator(BaseModel):
     """
@@ -81,6 +84,7 @@ class AppConfig(metaclass=SingletonMeta):
         logger.debug(f"Parsing {len(sys.argv)-1} command line arguments...")
 
         def convert_to_numeric(value):
+            """Convert the value to an integer or float if possible."""
             try:
                 return int(value)
             except ValueError:
@@ -92,6 +96,8 @@ class AppConfig(metaclass=SingletonMeta):
         args = sys.argv[1:]  # Skip the script name
         arg_labels = [(index, arg) for index, arg in enumerate(args) if arg.startswith("--")]
 
+        # if "=" is in the argument, split it by "=" and use the first part as the key
+        # else, use the next argument as the value
         if "=" in arg_labels[0][1]:
             arg_dict = {
                 label.split("=")[0].strip("-"): convert_to_numeric(label.split("=")[1]) for index, label in arg_labels
@@ -136,11 +142,7 @@ class AppConfig(metaclass=SingletonMeta):
         conf.update(lower_case_environ)  # load any environment variables
 
         # set the pipeline
-        if "modules" in conf:
-            pipeline = PluginFlow().set_flow(conf["modules"])
-        else:
-            logger.critical("No module pipeline specified. Exiting...")
-            sys.exit(1)
+        pipeline = PluginFlow().set_flow(conf["modules"]) if "modules" in conf else None
 
         return conf, pipeline
 
@@ -176,15 +178,17 @@ class AppConfig(metaclass=SingletonMeta):
 
         # load plugins
         self.registry = Registry(flow, plugin_dir=self.basic_settings.plugin_dir)
+
+        # collect missing fields
         still_needed = []
         for item in self.registry.active_plugins:
             try:
                 self.registry.load(conf, item)
             except ValidationError:  # collect missing fields
                 model = item.config
-                if model is None:
+                if model is None: # no needed fields
                     continue
-                else:
+                else: # collect needed fields
                     needed = [
                         (name, item.name, info)
                         for name, info in model.model_fields.items()
@@ -194,12 +198,22 @@ class AppConfig(metaclass=SingletonMeta):
                 continue
         if len(still_needed) > 0:
             return still_needed
+        
+
 
     @logger.catch(reraise=True)
-    def load_help(self) -> list[tuple[str, str, FieldInfo]]:
-        """Load the help for the configuration."""
+    def fetch_missing_fields(self) -> list[tuple[str, str, FieldInfo]] | None:
+        """Festch missing fields for this pipeline.
+
+        Returns:
+            list[tuple[str, str, FieldInfo]] | None: A list of the fields that are still needed.
+                In the format [(field, plugin_name, info), ...]
+        """
+        
         # grab args and initialize basic settings
         conf, flow = self._grab_args()
+        if "modules" not in conf:
+            return None
         conf["modules"] = flow.all_modules
         self.basic_settings = EssentialSettings(**conf)
         self.module_settings = conf
@@ -218,8 +232,28 @@ class AppConfig(metaclass=SingletonMeta):
                     if (name not in conf) and (info.is_required)
                 ]
                 needed_args.extend(needed)
-
         return needed_args
+    
+    @logger.catch(reraise=True)
+    def fetch_available_plugins(self) -> list[tuple[str, str]] | None:
+        """Fetch the available plugins for this pipeline.
+
+        Returns:
+            list[tuple[str, str, str]] | None: A list of the available plugins.
+                In the format [(plugin_name, plugin_type, plugin_uses), ...]        
+        """
+        # grab args and initialize basic settings
+        conf, flow = self._grab_args()
+        if flow is None:
+            flow = PluginFlow()
+        if "modules" not in conf:
+            conf["modules"] = "help_mode"
+        self.basic_settings = EssentialSettings(**conf)
+        self.module_settings = conf
+
+        # load plugins
+        self.registry = Registry(flow, plugin_dir=self.basic_settings.plugin_dir)
+        return [(plugin.name, plugin.type) for plugin in self.registry.available_plugins]
 
     # region Indexing magic methods
     def __getitem__(self, key: str | list[str]) -> any:
