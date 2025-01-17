@@ -199,7 +199,16 @@ class AppConfig(metaclass=SingletonMeta):
         if len(still_needed) > 0:
             return still_needed
         
-
+    @logger.catch(reraise=True)
+    def init_basic_settings(self) -> None:
+        """Initialize the basic settings for the application."""
+        conf, flow = self._grab_args()
+        if "modules" in conf:
+            conf["modules"] = flow.all_modules
+        else:
+            conf["modules"] = "help_mode"
+        self.basic_settings = EssentialSettings(**conf)
+        self.module_settings = conf
 
     @logger.catch(reraise=True)
     def fetch_missing_fields(self) -> list[tuple[str, str, FieldInfo]] | None:
