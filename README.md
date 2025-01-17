@@ -25,7 +25,9 @@ Ready to dive in? Let's get you set up!
 
 Simply run `pip install opsbox` to install the minimal set of opsbox tools.
 
-If using UV, run `uv add opsbox`
+If using UV, initilize your project using `uv init`.
+
+then `uv add opsbox`
 
 *Note: If you want to install AWS plugins, use the aws extras group, `opsbox[aws]`*
 
@@ -45,6 +47,8 @@ If using UV, run `uv add opsbox`
     ```bash
     pip install uv
     ```
+
+
 
     Now, let's install Opsbox:
 
@@ -89,6 +93,13 @@ Finally, run the OPA server as follows:
     docker run -d -p 8181:8181 --name opa-server opa-server
 ```
 
+The docker image can be found here:
+(https://hub.docker.com/r/openpolicyagent/opa/)
+
+```bash
+    docker run -d -p 8181:8181 --name opa openpolicyagent/opa run --server --addr=0.0.0.0:8181*
+```
+
 ## Running Opsbox
 
 Time to see the magic in action!
@@ -112,13 +123,23 @@ This will launch Opsbox and display the CLI help along with available commands.
 Want to run a specific pipeline? Here's how:
 
 ```bash
-uv run opsbox --modules your_input-your_optional_assistant-your_output --opa_upload_url http://your-opa-upload-url --opa_apply_url http://your-opa-apply-url
+uv run opsbox --modules your_input-your_optional_assistant-your_output --opa_url http://your-opa-url 
+```
+
+A recommended command to start is stray_ebs make sure you have opsbox[aws] and opsbox-cli-output installed
+
+```bash
+uv run opsbox --modules stray_ebs-cli_out --opa_url http://localhost:8181/ --aws_access_key_id {YOUR_ACCESS_KEY_ID} --aws_secret_access_key {YOUR_SECRET_ACCESS_KEY} --aws_region us-east-1
 ```
 
 or, if not using UV:
 
 ```bash
-python -m opsbox --modules your_input-your_optional_assistant-your_output --opa_upload_url http://your-opa-upload-url --opa_apply_url http://your-opa-apply-url
+python -m opsbox --modules your_input-your_optional_assistant-your_output --opa_url http://your-opa-url 
+```
+
+```bash
+python -m opsbox --modules stray_ebs-cli_out --opa_url http://localhost:8181/ --aws_access_key_id {YOUR_ACCESS_KEY_ID} --aws_secret_access_key {YOUR_SECRET_ACCESS_KEY} --aws_region us-east-1
 ```
 
 ## Configuration
@@ -138,9 +159,13 @@ Create a file named `.opsbox_conf.json` in your home directory:
   "aws_access_key_id": "YOUR_ACCESS_KEY_ID",
   "aws_secret_access_key": "YOUR_SECRET_ACCESS_KEY",
   "aws_region": "YOUR_AWS_REGION",
-  "opa_upload_url": "http://your-opa-upload-url",
-  "opa_apply_url": "http://your-opa-apply-url"
+  "opa_url": "http://your-opa-url",
 }
+```
+
+To run a command with a config it will follow this format
+```bash
+uv run opsbox --modules stray_ebs-cli_out --config config.json
 ```
 
 ### Command-Line Arguments
@@ -148,7 +173,7 @@ Create a file named `.opsbox_conf.json` in your home directory:
 You can also provide configuration options directly through the command line:
 
 ```bash
-python -m opsbox --modules example_module --aws_access_key_id YOUR_ACCESS_KEY_ID --aws_secret_access_key YOUR_SECRET_ACCESS_KEY --aws_region YOUR_AWS_REGION --opa_upload_url http://your-opa-upload-url --opa_apply_url http://your-opa-apply-url
+python -m opsbox --modules example_module --aws_access_key_id YOUR_ACCESS_KEY_ID --aws_secret_access_key YOUR_SECRET_ACCESS_KEY --aws_region YOUR_AWS_REGION --opa_url http://your-opa-url 
 ```
 
 ## Plugins
