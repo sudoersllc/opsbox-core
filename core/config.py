@@ -141,6 +141,10 @@ class AppConfig(metaclass=SingletonMeta):
             else:
                 current_slice.append(arg)
 
+        # add the last slice if it exists
+        if current_slice is not None:
+            processed_args.append(current_slice)
+            
         # define a helper function for converting numbers
         def convert_to_numeric(value: str) -> int | float | str:
             """Convert the value to an integer or float if possible.
@@ -254,6 +258,7 @@ class AppConfig(metaclass=SingletonMeta):
         
         # grab arguments from environment, command line, or config fils
         conf, flow = self._grab_args()
+        print(conf)
 
         # set the modules, if specified
         try:
