@@ -216,8 +216,6 @@ class AppConfig(metaclass=SingletonMeta):
         # grab args and initialize basic settings
         self.init_basic_settings()
 
-
-
         # set the LLM
         if self.llm_settings.oai_key is not None:
             from llama_index.llms.openai import OpenAI
@@ -271,11 +269,13 @@ class AppConfig(metaclass=SingletonMeta):
         conf, flow = self._grab_args()
 
         # set the modules, if specified
-        if load_modules:
-            try:
-                conf["modules"] = flow.all_modules
-                self.plugin_flow = flow # set the plugin flow
-            except AttributeError:
+        try:
+            conf["modules"] = flow.all_modules
+            self.plugin_flow = flow # set the plugin flow
+        except AttributeError:
+            if load_modules:
+                pass
+            else:
                 raise ValueError("No modules specified in configuration.")
 
         # set the application settings, plugin flow, and module settings
