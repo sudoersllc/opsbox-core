@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field
 from pydantic.fields import FieldInfo
 import sys
 from .plugins import Registry, PluginFlow
@@ -38,6 +38,7 @@ class EssentialSettings(BaseModel):
     log_file: str | None = Field(None, description="Path to the desired logging file.", required=False)
     init_debug: bool = Field(False, description="Enable debug logging during initialization. Used as a flag.", required=False)
     see_all: bool = Field(False, description="Show all plugins, including handlers and providers. Used as a flag.", required=False)
+    help: bool = Field(False, description="Show help for the program or specified pipeline pipeline. Used as a flag.", required=False)
 
 class LLMValidator(BaseModel):
     """
@@ -206,20 +207,9 @@ class AppConfig(metaclass=SingletonMeta):
         pipeline = PluginFlow().set_flow(total_config["modules"]) if "modules" in total_config else None
 
         return total_config, pipeline
-
-    def load(self) -> None | list[tuple[str, str, FieldInfo]]:
-        """Bootstraps the configuration code and argument parsing.
-
-        This method is used to load the configuration data from the command line, environment variables,
-        or a configuration file.
-
-        Returns:
-            list[tuple[str, str, FieldInfo]]: A list of the fields that are still needed.
-                In the format [(field, plugin_name, info), ...]"""
-
-        # grab args and initialize basic settings
-        self.init_settings()
-
+    
+    def initalize_llms(self) -> None:
+        """Initialize the LLMs for the application."""
         # set the LLM
         if self.llm_settings.oai_key is not None:
             from llama_index.llms.openai import OpenAI
@@ -233,6 +223,22 @@ class AppConfig(metaclass=SingletonMeta):
             self.llm = Anthropic(model="claude-3-5-sonnet-20240620", api_key=self.llm_settings.claude_key)
             self.embed_model = None
 
+    def load(self) -> None | list[tuple[str, str, FieldInfo]]:
+        """Bootstraps the configuration code and sets the registry.
+
+        This method is used to load the configuration data from the command line, environment variables,
+        or a configuration file.
+
+        Returns:
+            list[tuple[str, str, FieldInfo]]: A list of the fields that are still needed.
+                In the format [(field, plugin_name, info), ...]"""
+
+        # grab args and initialize basic settings
+        self.init_settings()
+
+        # initialize the LLMs
+        self.initalize_llms()
+        
         # load plugins
         if hasattr(self, "plugin_flow") is False and self.basic_settings.help:
             return None
