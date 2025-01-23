@@ -108,17 +108,49 @@ class AppConfig(metaclass=SingletonMeta):
             
         return (conf if conf != {} else None)
 
-    def _parse_cmd_arguments(self) -> dict:
+    def _parse_cmd_arguments(self) -> dict | None:
         """Parse the command line arguments and return them as a dictionary.
         Can handle both --arg=value and --arg value formats.
 
         Returns:
-            dict: The command line arguments in {arg: value} format.
+            dict | None: The command line arguments in {arg: value} format. If no arguments are found, returns None.
         """
         logger.debug(f"Parsing {len(sys.argv)-1} command line arguments...")
 
-        def convert_to_numeric(value):
-            """Convert the value to an integer or float if possible."""
+
+        raw_cmd_args = sys.argv[1:] # Skip the script name and break the arguments into chunks
+
+        # split the arguments into chunks of arguments, where the first element is the argument name
+        # and the rest are the values associated with that argument
+        processed_args = []
+        current_slice = None
+        for arg in raw_cmd_args:
+            if arg.startswith("--"): # we have a new argument
+                # pop the current slice if it exists
+                if current_slice is not None:
+                    processed_args.append(current_slice)
+                    current_slice = None
+
+                # split the argument by "=" if it exists
+                if "=" in arg:
+                    single_arg = arg.split("=")
+                    current_slice = [single_arg[0], single_arg[1]]
+                else:
+                    # otherwise, just add the argument
+                    current_slice = [arg]
+            else:
+                current_slice.append(arg)
+
+        # define a helper function for converting numbers
+        def convert_to_numeric(value: str) -> int | float | str:
+            """Convert the value to an integer or float if possible.
+            
+            Args:
+                value: The value to convert.
+            
+            Returns:
+                int | float | str: The converted value.
+            """
             try:
                 return int(value)
             except ValueError:
@@ -126,20 +158,23 @@ class AppConfig(metaclass=SingletonMeta):
                     return float(value)
                 except ValueError:
                     return value
-
-        args = sys.argv[1:]  # Skip the script name
-        arg_labels = [(index, arg) for index, arg in enumerate(args) if arg.startswith("--")]
-
-        # if "=" is in the argument, split it by "=" and use the first part as the key
-        # else, use the next argument as the value
-        if "=" in arg_labels[0][1]:
-            arg_dict = {
-                label.split("=")[0].strip("-"): convert_to_numeric(label.split("=")[1]) for index, label in arg_labels
-            }
-        else:
-            arg_dict = {label.strip("-"): convert_to_numeric(args[index + 1]) for index, label in arg_labels}
-
-        return arg_dict
+        
+        # process the arguments into a dictionary
+        arg_dict = {}
+        for arg_chunk in processed_args:
+            arg_label = arg_chunk[0].replace("--", "")
+            if len(arg_chunk) == 1:
+                # if the argument doesn't have a value, set it to True
+                # this is for flags like --help
+                arg_dict[arg_label] = True
+            elif len(arg_chunk) > 2:
+                # if there are multiple arguments, replace the list with covnerted values
+                arg_dict[arg_label] = [convert_to_numeric(arg) for arg in arg_chunk[1:]]
+            else:
+                # otherwise, just convert the value
+                arg_dict[arg_label] = convert_to_numeric(arg_chunk[1])
+        
+        return (arg_dict if arg_dict != {} else None)
 
     def _grab_args(self) -> tuple[dict, PluginFlow]:
         """Grab the configuration arguments from the environment, command line, or configuration file.
@@ -147,25 +182,26 @@ class AppConfig(metaclass=SingletonMeta):
         Returns:
             tuple[dict, PluginFlow]: The configuration arguments and the plugin flow."""
         logger.debug("Grabbing configuration arguments...")
-        conf = {}  # default config
+        total_config = {}
 
-        # if arguments are specified in command line, load them
-        if len(sys.argv) > 1:
-            conf.update(self._parse_cmd_arguments())
+        # load the command line arguments
+        cli_config = self._parse_cmd_arguments()
+        if cli_config is not None:
+            total_config.update(cli_config)
 
         # load the configuration from both the default and specified configuration files
-        json_file_config = self._parse_json_arguments(config_file=conf.get("config"))
+        json_file_config = self._parse_json_arguments(config_file=total_config.get("config"))
         if json_file_config is not None:
-            conf.update(json_file_config)
+            total_config.update(json_file_config)
 
         # load environment variables
         lower_case_environ = {key.lower(): value for key, value in environ.items()}
-        conf.update(lower_case_environ)  # load any environment variables
+        total_config.update(lower_case_environ)  # load any environment variables
 
         # set the pipeline
-        pipeline = PluginFlow().set_flow(conf["modules"]) if "modules" in conf else None
+        pipeline = PluginFlow().set_flow(total_config["modules"]) if "modules" in total_config else None
 
-        return conf, pipeline
+        return total_config, pipeline
 
     def load(self) -> None | list[tuple[str, str, FieldInfo]]:
         """Bootstraps the configuration code and argument parsing.
