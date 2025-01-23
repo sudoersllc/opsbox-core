@@ -159,6 +159,8 @@ class AppConfig(metaclass=SingletonMeta):
         # grab args and initialize basic settings
         self.init_basic_settings()
 
+
+
         # set the LLM
         if self.llm_settings.oai_key is not None:
             from llama_index.llms.openai import OpenAI
@@ -173,7 +175,7 @@ class AppConfig(metaclass=SingletonMeta):
             self.embed_model = None
 
         # load plugins
-        self.registry = Registry(self.flow, plugin_dir=self.basic_settings.plugin_dir)
+        self.registry = Registry(self.plugin_flow, plugin_dir=self.basic_settings.plugin_dir)
 
         # collect missing fields
         still_needed = []
@@ -221,6 +223,7 @@ class AppConfig(metaclass=SingletonMeta):
 
         # set the application settings, plugin flow, and module settings
         self.basic_settings = EssentialSettings(**conf)
+        self.llm_settings = LLMValidator(**conf)
         self.module_settings = conf
 
     @logger.catch(reraise=True)
