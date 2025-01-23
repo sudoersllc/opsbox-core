@@ -234,6 +234,9 @@ class AppConfig(metaclass=SingletonMeta):
             self.embed_model = None
 
         # load plugins
+        if hasattr(self, "plugin_flow") is False and self.basic_settings.help:
+            return None
+        
         self.registry = Registry(self.plugin_flow, plugin_dir=self.basic_settings.plugin_dir)
 
         # TODO: Refactor this to use the registry's load_active_plugins method
