@@ -258,14 +258,14 @@ class AppConfig(metaclass=SingletonMeta):
         
         # grab arguments from environment, command line, or config fils
         conf, flow = self._grab_args()
-        print(conf)
 
         # set the modules, if specified
         try:
             conf["modules"] = flow.all_modules
             self.plugin_flow = flow # set the plugin flow
         except AttributeError:
-            if load_modules:
+            if load_modules or conf.get("help", False):
+                conf["modules"] = "help_mode"
                 pass
             else:
                 raise ValueError("No modules specified in configuration.")
@@ -274,55 +274,22 @@ class AppConfig(metaclass=SingletonMeta):
         self.basic_settings = EssentialSettings(**conf)
         self.llm_settings = LLMValidator(**conf)
         self.module_settings = conf
-
-    @logger.catch(reraise=True)
-    def fetch_missing_fields(self) -> list[tuple[str, str, FieldInfo]] | None:
-        """Festch missing fields for this pipeline.
-
-        Returns:
-            list[tuple[str, str, FieldInfo]] | None: A list of the fields that are still needed.
-                In the format [(field, plugin_name, info), ...]
-        """
-        
-        # grab args and initialize basic settings
-        self.init_settings()
-
-        # load plugins
-        self.registry = Registry(self.flow, plugin_dir=self.basic_settings.plugin_dir)
-        needed_args = []
-        for item in self.registry.active_plugins:
-            model = item.config
-            if model is None:
-                continue
-            else:
-                needed = [
-                    (name, item.name, info)
-                    for name, info in model.model_fields.items()
-                    if (name not in self.module_settings) and (info.is_required)
-                ]
-                needed_args.extend(needed)
-        return needed_args
     
     @logger.catch(reraise=True)
-    def fetch_available_plugins(self) -> list[tuple[str, str]] | None:
-        """Fetch the available plugins for this pipeline.
+    def grab_conf_environment_plugins(self) -> list[tuple[str, str]] | None:
+        """Fetch the available plugins for this configuration evironment.
 
         Returns:
             list[tuple[str, str, str]] | None: A list of the available plugins.
                 In the format [(plugin_name, plugin_type, plugin_uses), ...]        
         """
-        # grab args and initialize basic settings
-        conf, flow = self._grab_args()
-        if flow is None:
-            flow = PluginFlow()
-        if "modules" not in conf:
-            conf["modules"] = "help_mode"
-        self.basic_settings = EssentialSettings(**conf)
-        self.module_settings = conf
+        # initialize basic settings
+        self.init_settings()
+        flow = PluginFlow() # dummy flow
 
-        # load plugins
-        self.registry = Registry(flow, plugin_dir=self.basic_settings.plugin_dir)
-        return [(plugin.name, plugin.type) for plugin in self.registry.available_plugins]
+        # load the plugins available for this environment
+        temp_registry = Registry(flow, plugin_dir=self.basic_settings.plugin_dir)
+        return [(plugin.name, plugin.type) for plugin in temp_registry.available_plugins]
 
     # region Indexing magic methods
     def __getitem__(self, key: str | list[str]) -> any:
