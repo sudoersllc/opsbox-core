@@ -64,7 +64,7 @@ def main():
     try:
         # setup config singleton
         app_config = AppConfig()
-        app_config.init_core_settings(load_modules=(not help_flag)) # load modules if not --help
+        app_config.init_settings(load_modules=(not help_flag)) # load modules if not --help
         logger.remove() # re-initialize logger
         start_logging(app_config.basic_settings.log_level, app_config.basic_settings.log_file)
         if help_flag:  # if --help is passed, print help
