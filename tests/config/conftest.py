@@ -1,5 +1,5 @@
 import pytest
-from core.config import AppConfig
+from opsbox.config import AppConfig
 
 
 @pytest.fixture

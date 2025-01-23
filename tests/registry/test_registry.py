@@ -1,6 +1,6 @@
 import pytest
 
-from core.plugins import Registry, PluginFlow
+from opsbox.plugins import Registry, PluginFlow
 from pathlib import Path
 
 # ruff: noqa: S101

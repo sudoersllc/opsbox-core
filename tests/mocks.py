@@ -1,6 +1,6 @@
 import json
-from core.plugins import PluginInfo, Registry, PluginFlow
-import core.config as config
+from opsbox.plugins import PluginInfo, Registry, PluginFlow
+import opsbox.config as config
 from typing import Any
 import contextlib
 
