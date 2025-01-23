@@ -39,10 +39,10 @@ Issues = "https://github.com/sudoersllc/opsbox-core/issues"
 
 
 [project.scripts]
-opsbox = "core.main:main"
+opsbox = "opsbox.main:main"
 
 [tool.setuptools]
-packages = ["core"]
+packages = ["opsbox"]
 
 [build-system]
 requires = ["setuptools>=42", "wheel"]
