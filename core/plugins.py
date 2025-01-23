@@ -378,20 +378,46 @@ class Registry(metaclass=SingletonMeta):
         return getattr(module, class_name)
 
     # @logger.catch(reraise=True)
-    def load_active(self, config: dict):
+    def load_active_plugins(self, config: dict) -> list[tuple[str, str, Any]] | None:
         """Load the active plugins with the provided configuration.
 
         Args:
-            config (dict): The configuration to load the plugins with."""
+            config (dict): The configuration to load the plugins with.
+            
+        Returns:
+            list[tuple[str, str, Any]] | None: A list of needed fields if any are missing."""
+        
+        still_needed = []
 
+        # load the active plugins
         for plugin in self.active_plugins:
-            self.load(config, plugin)
+            try:
+                self.load_plugin(config, plugin) # load the plugin
+            except ValidationError:  # missing fields
+                plugin_config_model = plugin.config
+                if plugin_config_model is None:
+                    # no needed fields
+                    continue
+                else: # collect needed fields
+                    needed = [
+                        (name, plugin.name, info)
+                        for name, info in plugin_config_model.model_fields.items()
+                        if (name not in config) and (info.is_required)
+                    ]
+                    still_needed.extend(needed)
+                continue
 
-    def load(self, config: dict, plugin: PluginInfo):
-        """Load all plugins with the provided configuration.
+        # return needed fields if any
+        if len(still_needed) > 0:
+            return still_needed
+        else:
+            return None
+
+    def load_plugin(self, config: dict, plugin: PluginInfo):
+        """Load a specified with the provided configuration.
 
         Args:
-            config (dict): The configuration to load the plugins with.
+            config (dict): The configuration to load the plugin with.
             plugin (PluginInfo): The plugin to load.
         """
         logger.debug(f"Initializing plugin {plugin.name}")

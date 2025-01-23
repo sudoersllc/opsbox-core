@@ -232,28 +232,10 @@ class AppConfig(metaclass=SingletonMeta):
         # load plugins
         self.registry = Registry(self.plugin_flow, plugin_dir=self.basic_settings.plugin_dir)
 
-        # collect missing fields
-        still_needed = []
-
         # TODO: Refactor this to use the registry's load_active_plugins method
         conf = self.module_settings
-        for item in self.registry.active_plugins:
-            try:
-                self.registry.load(conf, item)
-            except ValidationError:  # collect missing fields
-                model = item.config
-                if model is None: # no needed fields
-                    continue
-                else: # collect needed fields
-                    needed = [
-                        (name, item.name, info)
-                        for name, info in model.model_fields.items()
-                        if (name not in conf) and (info.is_required)
-                    ]
-                    still_needed.extend(needed)
-                continue
-        if len(still_needed) > 0:
-            return still_needed
+        still_needed = self.registry.load_active_plugins(conf)
+        return still_needed
         
     @logger.catch(reraise=True)
     def init_settings(self, load_modules: bool = True) -> None:
@@ -265,7 +247,12 @@ class AppConfig(metaclass=SingletonMeta):
         Args:
             load_modules (bool): Whether to load the modules or not. Defaults to True.
         """
-        # grab arguments from environment, command line, or config file
+        # don't repeat yourself
+        if all([hasattr(self, "basic_settings"), hasattr(self, "plugin_flow"), hasattr(self, "module_settings")]):
+            logger.trace("Using existing settings.")
+            return
+        
+        # grab arguments from environment, command line, or config fils
         conf, flow = self._grab_args()
 
         # set the modules, if specified
@@ -293,15 +280,10 @@ class AppConfig(metaclass=SingletonMeta):
         """
         
         # grab args and initialize basic settings
-        conf, flow = self._grab_args()
-        if "modules" not in conf:
-            return None
-        conf["modules"] = flow.all_modules
-        self.basic_settings = EssentialSettings(**conf)
-        self.module_settings = conf
+        self.init_settings()
 
         # load plugins
-        self.registry = Registry(flow, plugin_dir=self.basic_settings.plugin_dir)
+        self.registry = Registry(self.flow, plugin_dir=self.basic_settings.plugin_dir)
         needed_args = []
         for item in self.registry.active_plugins:
             model = item.config
@@ -311,7 +293,7 @@ class AppConfig(metaclass=SingletonMeta):
                 needed = [
                     (name, item.name, info)
                     for name, info in model.model_fields.items()
-                    if (name not in conf) and (info.is_required)
+                    if (name not in self.module_settings) and (info.is_required)
                 ]
                 needed_args.extend(needed)
         return needed_args
