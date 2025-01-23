@@ -45,7 +45,7 @@ def main():
     if "--init-debug" in argv:
         start_logging(log_level="TRACE")
         logger.debug("Initialization debugging enabled!")
-        del argv[argv.index("--init-debug")]
+        #del argv[argv.index("--init-debug")]
 
     # check for see-all flag
     excluded = ["handler", "provider"]
@@ -64,7 +64,7 @@ def main():
     try:
         # setup config singleton
         app_config = AppConfig()
-        app_config.init_basic_settings(load_modules=(not help_flag)) # load modules if not --help
+        app_config.init_core_settings(load_modules=(not help_flag)) # load modules if not --help
         logger.remove() # re-initialize logger
         start_logging(app_config.basic_settings.log_level, app_config.basic_settings.log_file)
         if help_flag:  # if --help is passed, print help

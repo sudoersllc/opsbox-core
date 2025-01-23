@@ -214,7 +214,7 @@ class AppConfig(metaclass=SingletonMeta):
                 In the format [(field, plugin_name, info), ...]"""
 
         # grab args and initialize basic settings
-        self.init_basic_settings()
+        self.init_core_settings()
 
         # set the LLM
         if self.llm_settings.oai_key is not None:
@@ -256,8 +256,8 @@ class AppConfig(metaclass=SingletonMeta):
             return still_needed
         
     @logger.catch(reraise=True)
-    def init_basic_settings(self, load_modules: bool = True) -> None:
-        """Initialize the basic settings for the application.
+    def init_core_settings(self, load_modules: bool = True) -> None:
+        """Initialize the core settings for the application.
         Will grab the configuration arguments from the environment, command line, or configuration file.
         
         Sets the `basic_settings`, `plugin_flow`, and `module_settings` attributes.
