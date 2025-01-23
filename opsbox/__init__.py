@@ -1,0 +1,1 @@
+from opsbox.plugins import Result, PluginInfo, Registry

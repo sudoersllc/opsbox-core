@@ -5,8 +5,8 @@ import os
 import sys
 import tomllib as toml
 from pydantic import BaseModel
-from core.base_hooks import add_hookspecs
-from core.utils import SingletonMeta
+from opsbox.base_hooks import add_hookspecs
+from opsbox.utils import SingletonMeta
 from typing import Any
 from loguru import logger
 from pathlib import Path
