@@ -157,11 +157,7 @@ class AppConfig(metaclass=SingletonMeta):
                 In the format [(field, plugin_name, info), ...]"""
 
         # grab args and initialize basic settings
-        conf, flow = self._grab_args()
-        conf["modules"] = flow.all_modules
-        self.basic_settings = EssentialSettings(**conf)
-        self.llm_settings = LLMValidator(**conf)
-        self.module_settings = conf
+        self.init_basic_settings()
 
         # set the LLM
         if self.llm_settings.oai_key is not None:
@@ -177,10 +173,13 @@ class AppConfig(metaclass=SingletonMeta):
             self.embed_model = None
 
         # load plugins
-        self.registry = Registry(flow, plugin_dir=self.basic_settings.plugin_dir)
+        self.registry = Registry(self.flow, plugin_dir=self.basic_settings.plugin_dir)
 
         # collect missing fields
         still_needed = []
+
+        # TODO: Refactor this to use the registry's load_active_plugins method
+        conf = self.module_settings
         for item in self.registry.active_plugins:
             try:
                 self.registry.load(conf, item)
@@ -200,13 +199,27 @@ class AppConfig(metaclass=SingletonMeta):
             return still_needed
         
     @logger.catch(reraise=True)
-    def init_basic_settings(self) -> None:
-        """Initialize the basic settings for the application."""
+    def init_basic_settings(self, load_modules: bool = True) -> None:
+        """Initialize the basic settings for the application.
+        Will grab the configuration arguments from the environment, command line, or configuration file.
+        
+        Sets the `basic_settings`, `plugin_flow`, and `module_settings` attributes.
+        
+        Args:
+            load_modules (bool): Whether to load the modules or not. Defaults to True.
+        """
+        # grab arguments from environment, command line, or config file
         conf, flow = self._grab_args()
-        if "modules" in conf:
-            conf["modules"] = flow.all_modules
-        else:
-            conf["modules"] = "help_mode"
+
+        # set the modules, if specified
+        if load_modules:
+            try:
+                conf["modules"] = flow.all_modules
+                self.plugin_flow = flow # set the plugin flow
+            except AttributeError:
+                raise ValueError("No modules specified in configuration.")
+
+        # set the application settings, plugin flow, and module settings
         self.basic_settings = EssentialSettings(**conf)
         self.module_settings = conf
 
