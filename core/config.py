@@ -64,15 +64,49 @@ class AppConfig(metaclass=SingletonMeta):
         self.module_settings (dict): The settings for the modules.
     """
 
-    def _load_config_file(self, config_file: str) -> dict:
-        """Loads the configuration from a configuration file.
+    def _parse_json_arguments(self, config_file: str, default_file_path: str = ".opsbox.json") -> dict:
+        """Loads the configuration from the default configuration file, if it exists.
+        Then, it loads the configuration from the specified configuration file.
 
         Args:
             config_file (str): The path to the configuration file.
+            default_file_path (str): The path to the default configuration file from the user's home directory.
+        
+        Returns:
+            dict | None: The configuration arguments. If no configuration is found, returns None.
         """
-        with open(config_file, "r") as file:
-            json_conf = json.load(file)
-            return json_conf
+        # if default config file is set, load args from it
+        conf = {}
+        default_config_file = find_config_file(default_file_path)
+        expected_path = path.expanduser(f"~/{default_file_path}")
+
+        # load the default config file if it exists
+        if default_config_file is not None:
+            try:
+                with open(default_config_file, "r") as f:
+                    document = json.load(f)
+                    conf.update(document)
+                logger.debug(f"Loaded default config file {default_config_file}")
+            except json.JSONDecodeError:
+                logger.warning(f"Default config file at {expected_path} is not valid JSON. Consider fixing that! Falling back...")
+        else:
+            logger.debug(f"No default config file found at {expected_path}. Falling back...")
+
+        # load the specified config file
+        if config_file is not None:
+            try:
+                with open(config_file, "r") as f:
+                    document = json.load(f)
+                    conf.update(document)
+                logger.debug(f"Loaded config file {config_file}")
+            except FileNotFoundError:
+                logger.error(f"Config file {config_file} not found.")
+                raise FileNotFoundError(f"Config file {config_file} not found.")
+            except json.JSONDecodeError:
+                logger.error(f"Config file {config_file} is not valid JSON.")
+                raise json.JSONDecodeError(f"Config file {config_file} is not valid JSON.")
+            
+        return (conf if conf != {} else None)
 
     def _parse_cmd_arguments(self) -> dict:
         """Parse the command line arguments and return them as a dictionary.
@@ -119,25 +153,12 @@ class AppConfig(metaclass=SingletonMeta):
         if len(sys.argv) > 1:
             conf.update(self._parse_cmd_arguments())
 
-        # if default config file is set, load args from it
-        default_config_file = find_config_file(".opsbox.json")
-        if default_config_file is not None:
-            try:
-                conf = self._load_config_file(default_config_file)
-                logger.debug(f"Loaded default config file {default_config_file}")
-            except FileNotFoundError:
-                logger.debug("No default config file found. Falling back...")
-            except json.JSONDecodeError:
-                logger.warning("Default config file is not valid JSON. Consider fixing that! Falling back...")
+        # load the configuration from both the default and specified configuration files
+        json_file_config = self._parse_json_arguments(config_file=conf.get("config"))
+        if json_file_config is not None:
+            conf.update(json_file_config)
 
-        # if config file is specified in command line, load args from it
-        if "config" in conf:
-            config_path = conf["config"]
-            logger.debug(f"Loading module pipeline from config file {config_path}")
-            conf.update(self._load_config_file(config_path))
-        else:
-            logger.debug("No config file specified in command line. Falling back...")
-
+        # load environment variables
         lower_case_environ = {key.lower(): value for key, value in environ.items()}
         conf.update(lower_case_environ)  # load any environment variables
 
