@@ -57,18 +57,6 @@ body:
   - type: markdown
     attributes:
       value: |
-        ### Screenshots
-        If applicable, add screenshots to help explain your problem.
-
-  - type: input
-    id: screenshots
-    attributes:
-      label: Screenshots
-      description: Provide a link to screenshots or attach them to this issue if applicable.
-
-  - type: markdown
-    attributes:
-      value: |
         # Environment Details
         Provide information about your environment, such as OS, Python version, and OpsBox version.
 
@@ -95,6 +83,7 @@ body:
       value: |
         # Additional Context
         Add any other context about the problem that may be helpful.
+        ***Put helpful screenshots here!***
 
   - type: textarea
     id: additional_context
