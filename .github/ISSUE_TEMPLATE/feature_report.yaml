@@ -23,7 +23,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        ### Use Case
+        # Use Case
         Explain the problem this feature would solve or the use case it would support.
 
   - type: textarea
