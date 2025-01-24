@@ -29,16 +29,16 @@ class EssentialSettings(BaseModel):
     The essential settings are the settings that are required to run the application.
     """
 
-    modules: list[str] | str = Field(..., description="List of modules to load in pipeline format.", required=True)
+    modules: list[str] | str = Field(..., description="List of modules to load in pipeline format.")
     config: str | None = Field(
-        default=find_config_file(".opsbox_conf.json"), description="Path to the configuration file.", required=False
+        default=find_config_file(".opsbox_conf.json"), description="Path to the configuration file."
     )
-    plugin_dir: str | None = Field(None, description="Directory to load plugins from instead of environment. Useful for local development.", required=False)
-    log_level: str | None = Field(None, description="Desired logging level. One of 'INFO', 'TRACE', 'DEBUG', 'WARNING', or 'CRITICAL'. Default is 'INFO'", required=False)
-    log_file: str | None = Field(None, description="Path to the desired logging file.", required=False)
-    init_debug: bool = Field(False, description="Enable debug logging during initialization. Used as a flag.", required=False)
-    see_all: bool = Field(False, description="Show all plugins, including handlers and providers. Used as a flag.", required=False)
-    help: bool = Field(False, description="Show help for the program or specified pipeline pipeline. Used as a flag.", required=False)
+    plugin_dir: str | None = Field(None, description="Directory to load plugins from instead of environment. Useful for local development.")
+    log_level: str | None = Field(None, description="Desired logging level. One of 'INFO', 'TRACE', 'DEBUG', 'WARNING', or 'CRITICAL'. Default is 'INFO'")
+    log_file: str | None = Field(None, description="Path to the desired logging file.")
+    init_debug: bool = Field(False, description="Enable debug logging during initialization. Used as a flag.")
+    see_all: bool = Field(False, description="Show all plugins, including handlers and providers. Used as a flag.")
+    help: bool = Field(False, description="Show help for the program or specified pipeline pipeline. Used as a flag.")
 
 class LLMValidator(BaseModel):
     """
