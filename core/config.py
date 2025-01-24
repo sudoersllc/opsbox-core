@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel, Field
 from pydantic.fields import FieldInfo
 import sys
@@ -5,6 +6,8 @@ from .plugins import Registry, PluginFlow
 from core.utils import SingletonMeta
 from os import environ, path
 import json
+import dateparser
+
 
 
 from loguru import logger
@@ -160,22 +163,32 @@ class AppConfig(metaclass=SingletonMeta):
             processed_args.append(current_slice)
             
         # define a helper function for converting numbers
-        def convert_to_numeric(value: str) -> int | float | str:
+        def convert_to_numeric(value: str) -> int | float | str | datetime:
             """Convert the value to an integer or float if possible.
             
             Args:
                 value: The value to convert.
             
             Returns:
-                int | float | str: The converted value.
+                int | float | str | datetime: The converted value.
             """
+            # try to convert the value to an integer or float
             try:
                 return int(value)
             except ValueError:
-                try:
-                    return float(value)
-                except ValueError:
-                    return value
+                pass
+
+            try:
+                return float(value)
+            except ValueError:
+                pass
+            
+            # try to convert the value to a datetime object
+            item = dateparser.parse(value)
+            if item is None:
+                return value
+            else:
+                return item
         
         # process the arguments into a dictionary
         arg_dict = {}
