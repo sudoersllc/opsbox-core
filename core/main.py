@@ -103,8 +103,7 @@ def main():
         return 1
 
     # process pipeline
-    pipeline = Registry().produce_pipeline()
-    Registry().process_pipeline(pipeline)
+    Registry().process_pipeline()
 
 
 if __name__ == "__main__":

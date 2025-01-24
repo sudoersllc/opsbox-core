@@ -238,7 +238,7 @@ class AppConfig(metaclass=SingletonMeta):
 
         # initialize the LLMs
         self.initalize_llms()
-        
+
         # load plugins
         if hasattr(self, "plugin_flow") is False and self.basic_settings.help:
             return None
@@ -270,7 +270,7 @@ class AppConfig(metaclass=SingletonMeta):
 
         # set the modules, if specified
         try:
-            conf["modules"] = flow.all_modules
+            conf["modules"] = flow.all_visible_modules
             self.plugin_flow = flow # set the plugin flow
         except AttributeError:
             if load_modules or conf.get("help", False):
