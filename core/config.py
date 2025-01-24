@@ -236,15 +236,19 @@ class AppConfig(metaclass=SingletonMeta):
             self.llm = Anthropic(model="claude-3-5-sonnet-20240620", api_key=self.llm_settings.claude_key)
             self.embed_model = None
 
-    def load(self) -> None | list[tuple[str, str, FieldInfo]]:
+    def load(self, all_fields: bool = False) -> None | list[tuple[str, str, FieldInfo]]:
         """Bootstraps the configuration code and sets the registry.
 
         This method is used to load the configuration data from the command line, environment variables,
         or a configuration file.
 
+        Args:
+            all_fields (bool): Whether to load all fields or not. Defaults to False.
+
         Returns:
             list[tuple[str, str, FieldInfo]]: A list of the fields that are still needed.
-                In the format [(field, plugin_name, info), ...]"""
+                In the format [(field, plugin_name, info), ...]
+        """
 
         # grab args and initialize basic settings
         self.init_settings()
@@ -258,10 +262,27 @@ class AppConfig(metaclass=SingletonMeta):
         
         self.registry = Registry(self.plugin_flow, plugin_dir=self.basic_settings.plugin_dir)
 
-        # TODO: Refactor this to use the registry's load_active_plugins method
-        conf = self.module_settings
-        still_needed = self.registry.load_active_plugins(conf)
-        return still_needed
+        # if we want to retreive all fields, we need to load all plugins
+        # this is used for help mode
+        if all_fields:
+            needed_args = []
+            for item in self.registry.active_plugins:
+                model = item.config
+                if model is None:
+                    continue
+                else:
+                    fields = [
+                        (name, item.name, info)
+                        for name, info in model.model_fields.items()
+                    ]
+                    needed_args.extend(fields)
+            return needed_args
+        else:
+            conf = self.module_settings
+            still_needed = self.registry.load_active_plugins(conf)
+
+
+            return still_needed
         
     @logger.catch(reraise=True)
     def init_settings(self, load_modules: bool = True) -> None:

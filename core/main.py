@@ -59,10 +59,10 @@ def main():
         start_logging(app_config.basic_settings.log_level, app_config.basic_settings.log_file)
 
         # load config
-        missing_fields = app_config.load()
+        missing_fields = app_config.load(all_fields=app_config.basic_settings.help)
         if app_config.basic_settings.help:  # if --help is passed, print help
             if missing_fields is not None:
-                # if there are still missing fields and a pipeline, print pipeline help
+                # if there are missing fields and a pipeline, print pipeline help
                 modules = app_config.basic_settings.modules
                 print_pipeline_help(modules, missing_fields)
                 sys.exit(1)
