@@ -1,6 +1,6 @@
 [project]
 name = "opsbox"
-version = "0.1.4"
+version = "0.1.6"
 description = "AI-powered infrastructure management"
 readme = "README.md"
 requires-python = "==3.11.*"
@@ -31,12 +31,11 @@ classifiers = [
 ]
 
 [project.urls]
-# Change these later
-Homepage = "https://example.com"
-Documentation = "https://example.com"
-Repository = "https://github.com/me/spam.git"
-Issues = "https://github.com/me/spam/issues"
-Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
+#Homepage = "https://example.com"
+Documentation = "https://sudoersllc.github.io/opsbox-docs/core/"
+Repository = "https://github.com/sudoersllc/opsbox-core.git"
+Issues = "https://github.com/sudoersllc/opsbox-core/issues"
+#Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
 
 
 [project.scripts]
@@ -50,22 +49,15 @@ requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project.optional-dependencies]
-docs = [
-    "mkdocs>=1.6.0,<2.0.0",
-    "mkdocstrings-python>=1.10.5,<2.0.0",
-    "mkdocstrings>=0.25.1,<0.26.0",
-    "pymdown-extensions>=10.8.1,<11.0.0",
-]
-
 aws = [
-    "opsbox-s3-checks>=0.1.2",
-    "opsbox-ec2-checks>=0.1.2",
-    "opsbox-elb-checks>=0.1.2",
-    "opsbox-aws-iam-checks>=0.1.2",
-    "opsbox-r53-checks>=0.1.2",
-    "opsbox-rds-checks>=0.1.2",
+    "opsbox-s3-checks>=0.1.4",
+    "opsbox-ec2-checks>=0.1.5",
+    "opsbox-elb-checks>=0.1.6",
+    "opsbox-aws-iam-checks>=0.1.4",
+    "opsbox-r53-checks>=0.1.5",
+    "opsbox-rds-checks>=0.1.6",
     "opsbox-general-handler>=0.1.2",
-    "opsbox-rego-handler>=0.1.2",
+    "opsbox-rego-handler>=0.1.5",
 ]
 
 [tool.uv]

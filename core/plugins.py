@@ -19,6 +19,23 @@ from inspect import getmodule
 hookspec = pluggy.HookspecMarker("opsbox")
 
 
+class PluginNotFoundError(Exception):
+    """Exception raised when a plugin is not found.
+
+    Attributes:
+        plugin_name (str | list[str]): The name of the plugin that was not found.
+        message (str): The message of the exception.
+    """
+
+    def __init__(self, plugin_name: str | list[str]):
+        self.plugin_name = plugin_name
+        if isinstance(plugin_name, list):
+            self.message = f"Plugins {', '.join(plugin_name)} not found."
+        else:
+            self.message = f"Plugin '{plugin_name}' not found."
+        super().__init__(self.message)
+
+
 class Result(BaseModel):
     """A dictionary representing the results of a rego check.
 
@@ -239,13 +256,14 @@ class Registry(metaclass=SingletonMeta):
                     try:
                         plugin_class = entry_point.load()
                         plugin_obj = plugin_class()
-                        config=None
+                        config = None
                         with contextlib.suppress(AttributeError):
                             config: type[BaseModel] = plugin_obj.grab_config()
 
                         plugin_module = getmodule(plugin_class)
                         logger.trace(f"Searching for manifest in {str(plugin_module)}. It's type is {str(type(plugin_module))}")
-                        with resources.files(plugin_module).joinpath("manifest.toml") as path, open(path, "rb") as toml_file:
+                        path = resources.files(plugin_module).joinpath("manifest.toml")
+                        with open(str(path), "rb") as toml_file:
                             plugin_config = toml.load(toml_file)
                             plugin_raw_info = plugin_config["info"]
                             plugin_raw_info["toml_path"] = path
@@ -292,7 +310,7 @@ class Registry(metaclass=SingletonMeta):
                 names: list[str] = [item.name for item in shallow_needed]
                 still_needed = [item for item in pipeline_modules if item not in names]
                 logger.critical(f"Could not find needed plugins: {still_needed}")
-                raise FileNotFoundError(f"Could not find needed plugins: {still_needed}")
+                raise PluginNotFoundError(still_needed)
 
             # load the plugins that are needed for the pipeline
             for item in shallow_needed:
@@ -317,7 +335,7 @@ class Registry(metaclass=SingletonMeta):
             if len(uses) != len(dependecies):
                 still_needed = [item for item in uses if item not in dependecies]
                 logger.critical(f"Could not find needed plugin dependencies: {still_needed}")
-                raise FileNotFoundError(f"Could not find needed depencencies: {still_needed}")
+                raise PluginNotFoundError(still_needed)
 
             # load the plugins that are needed for the other plugins
             logger.debug(f"Dependencies: {[item.name for item in dependecies]}")

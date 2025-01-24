@@ -82,7 +82,6 @@ Create a dockerfile and add the following code:
     CMD ["run", "--server", "--addr", "0.0.0.0:8181"]
 ```
 
-
 Navigate to the directory and Build the Docker image:
 ```bash
     docker build -t opa-server .
@@ -94,7 +93,7 @@ Finally, run the OPA server as follows:
     docker run -d -p 8181:8181 --name opa-server opa-server
 ```
 
-Or the docker image can be found here
+The docker image can be found here:
 (https://hub.docker.com/r/openpolicyagent/opa/)
 
 ```bash
