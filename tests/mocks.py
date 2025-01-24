@@ -74,7 +74,7 @@ def MockConfig(path: str | None, override: dict | None = None, use_home: bool = 
     item = {**item, **override} if override is not None else item
 
     conf = config.AppConfig()
-    conf.basic_settings = config.EssentialSettings(**item, path=path)
+    conf.basic_settings = config.ApplicationSettings(**item, path=path)
     conf.module_settings = item
     return conf
 

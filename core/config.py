@@ -24,9 +24,18 @@ def find_config_file(filename: str) -> str | None:
     return config_path if path.isfile(config_path) else None
 
 
-class EssentialSettings(BaseModel):
+class ApplicationSettings(BaseModel):
     """The class is used to store the essential settings for the application.
-    The essential settings are the settings that are required to run the application.
+    
+    Attributes:
+        modules (list[str]): The modules to load in pipeline format.
+        config (str): The path to the configuration file.
+        plugin_dir (str): The directory to load plugins from instead of environment. Useful for local development.
+        log_level (str): The desired logging level. One of 'INFO', 'TRACE', 'DEBUG', 'WARNING', or 'CRITICAL'. Default is 'INFO'.
+        log_file (str): The path to the desired logging file.
+        init_debug (bool): Enable debug logging during initialization. Used as a flag.
+        see_all (bool): Show all plugins, including handlers and providers. Used as a flag.
+        help (bool): Show help for the program or specified pipeline pipeline. Used as a flag.
     """
 
     modules: list[str] | str = Field(..., description="List of modules to load in pipeline format.")
@@ -63,9 +72,13 @@ class AppConfig(metaclass=SingletonMeta):
     Attributes:
         self.basic_settings (EssentialSettings): The basic settings for the application.
         self.module_settings (dict): The settings for the modules.
+        self.plugin_flow (PluginFlow): The plugin flow for the application.
+        self.registry (Registry): The registry for the application.
+        self.llm (LLM | None): The LLM for the application.
+        self.embed_model (LLMEmbedding | None): The LLM embedding model for the application.
     """
 
-    def _parse_json_arguments(self, config_file: str, default_file_path: str = ".opsbox.json") -> dict:
+    def _parse_json_arguments(self, config_file: str, default_file_path: str = ".opsbox.json") -> dict  | None:
         """Loads the configuration from the default configuration file, if it exists.
         Then, it loads the configuration from the specified configuration file.
 
@@ -280,7 +293,7 @@ class AppConfig(metaclass=SingletonMeta):
                 raise ValueError("No modules specified in configuration.")
 
         # set the application settings, plugin flow, and module settings
-        self.basic_settings = EssentialSettings(**conf)
+        self.basic_settings = ApplicationSettings(**conf)
         self.llm_settings = LLMValidator(**conf)
         self.module_settings = conf
     
