@@ -8,7 +8,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        ### Bug Description
+        # Bug Description
         Please provide a clear and concise description of the bug.
 
   - type: textarea
@@ -23,7 +23,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        ### Steps to Reproduce
+        # Steps to Reproduce
         Provide step-by-step instructions to reproduce the issue.
 
   - type: textarea
@@ -42,7 +42,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        ### Expected Behavior
+        # Expected Behavior
         Describe what you expected to happen.
 
   - type: textarea
@@ -57,19 +57,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        ### Screenshots
-        If applicable, add screenshots to help explain your problem.
-
-  - type: input
-    id: screenshots
-    attributes:
-      label: Screenshots
-      description: Provide a link to screenshots or attach them to this issue if applicable.
-
-  - type: markdown
-    attributes:
-      value: |
-        ### Environment Details
+        # Environment Details
         Provide information about your environment, such as OS, Python version, and OpsBox version.
 
   - type: input
@@ -82,12 +70,6 @@ body:
         Python: [e.g. 3.11.2, 3.12.1]
         OpsBox Version: [e.g. 0.1.6]
 
-  - type: markdown
-    attributes:
-      value: |
-        ### Installation Method
-        Provide details about how you installed the program.
-
   - type: input
     id: installation_details
     attributes:
@@ -99,8 +81,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        ### Additional Context
+        # Additional Context
         Add any other context about the problem that may be helpful.
+        ***Put helpful screenshots here!***
 
   - type: textarea
     id: additional_context
