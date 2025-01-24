@@ -221,7 +221,7 @@ class AppConfig(metaclass=SingletonMeta):
 
         return total_config, pipeline
     
-    def initalize_llms(self) -> None:
+    def init_llms(self) -> None:
         """Initialize the LLMs for the application."""
         # set the LLM
         if self.llm_settings.oai_key is not None:
@@ -250,7 +250,7 @@ class AppConfig(metaclass=SingletonMeta):
         self.init_settings()
 
         # initialize the LLMs
-        self.initalize_llms()
+        self.init_llms()
 
         # load plugins
         if hasattr(self, "plugin_flow") is False and self.basic_settings.help:
