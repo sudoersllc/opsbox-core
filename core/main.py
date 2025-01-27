@@ -17,7 +17,6 @@ import sys
 from json import JSONDecodeError
 
 from sys import argv
-import contextlib
 
 
 def start_logging(log_level: str | None = None, log_file: str | None = None):
@@ -42,48 +41,41 @@ def main():
     logger.remove()
 
     # check for debug flag
-    if "--init-debug" in argv:
+    if "--init_debug" in argv:
         start_logging(log_level="TRACE")
-        logger.debug("Initialization debugging enabled!")
-        del argv[argv.index("--init-debug")]
 
-    # check for see-all flag
-    excluded = ["handler", "provider"]
-    if "--see-all" in argv:
-        del argv[argv.index("--see-all")]
-        excluded = None
-
-    # check for help flag
-    help_flag = False
-    if "--help" in argv or len(argv) == 1:  # if no args are passed or --help is passed
-        with contextlib.suppress(ValueError):  # remove --help from argv
-            del argv[argv.index("--help")]
-        help_flag = True
+    # if no args are passed, print help
+    if len(argv) <= 1:
+        argv.append("--help")  # add --help to args
 
     # load help and config
     try:
-        # setup config singleton
-        app_config = AppConfig()
-        app_config.init_basic_settings()
-        logger.remove() # re-initialize logger
+        # init settings
+        app_config = AppConfig()  # setup config singleton
+        app_config.init_settings()  # initialize settings
+
+        # init logger
+        logger.remove()  # re-initialize logger
         start_logging(app_config.basic_settings.log_level, app_config.basic_settings.log_file)
-        if help_flag:  # if --help is passed, print help
-            missing_fields = app_config.fetch_missing_fields()
-            if missing_fields is not None:  # if there are still missing fields, print pipeline help
+
+        # load config
+        missing_fields = app_config.load(all_fields=app_config.basic_settings.help)
+        if app_config.basic_settings.help:  # if --help is passed, print help
+            if missing_fields is not None:
+                # if there are missing fields and a pipeline, print pipeline help
                 modules = app_config.basic_settings.modules
                 print_pipeline_help(modules, missing_fields)
                 sys.exit(1)
-            else:  # if there are no missing fields, print help
-                available_plugins = app_config.fetch_available_plugins()
+            else:
+                # if there are no missing fields, print general help
+                available_plugins = app_config.grab_conf_environment_plugins()
                 print_opsbox_banner()
                 print_welcome_message()
                 print_pipeline_building_help()
                 print_config_help()
-                print_basic_args_help()                    
-                print_available_plugins(available_plugins, excluded=excluded, plugin_dir=app_config.basic_settings.plugin_dir)
+                print_basic_args_help()
+                print_available_plugins(available_plugins, excluded=(None if "--see_all" in argv else ["handler", "provider"]), plugin_dir=app_config.basic_settings.plugin_dir)
                 sys.exit(1)
-        else:  # if args are passed, load the config
-            missing_fields = app_config.load()
     except IndexError as _:  # if the pipeline is incorrectly specified
         print_opsbox_banner()
         display_text = """[bold red]It seems like you have your pipeline incorrectly specified! Please check the help below.\n[/bold red]"""
@@ -102,8 +94,8 @@ def main():
         return 1
     except PluginNotFoundError as e:  # if a plugin is not found
         print_opsbox_banner()
-        print_plugin_not_found_error(app_config.basic_settings.plugin_dir, e)        
-        print_available_plugins(app_config.fetch_available_plugins(), excluded=excluded, plugin_dir=app_config.basic_settings.plugin_dir)
+        print_plugin_not_found_error(app_config.basic_settings.plugin_dir, e)
+        print_available_plugins(app_config.grab_conf_environment_plugins(), excluded=(None if "--see_all" in argv else ["handler", "provider"]), plugin_dir=app_config.basic_settings.plugin_dir)
         return 1
     if missing_fields:  # if there are still missing fields
         print_opsbox_banner()
@@ -111,8 +103,7 @@ def main():
         return 1
 
     # process pipeline
-    pipeline = Registry().produce_pipeline()
-    Registry().process_pipeline(pipeline)
+    Registry().process_pipeline()
 
 
 if __name__ == "__main__":

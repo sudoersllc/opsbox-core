@@ -3,7 +3,7 @@ from rich.align import Align
 from rich.table import Table
 from rich.text import Text
 from pydantic.fields import FieldInfo
-from core.config import EssentialSettings
+from core.config import ApplicationSettings
 
 console = Console()
 
@@ -182,7 +182,7 @@ def print_basic_args_help():
     table.add_column("Description", justify="left", style="magenta")
     table.add_column("Required", justify="left", style="yellow")
 
-    for field_name, field_info in EssentialSettings.__fields__.items():
+    for field_name, field_info in ApplicationSettings.__fields__.items():
         table.add_row(field_name, field_info.description, str(field_info.is_required()))
 
     table = Align.left(table, vertical="middle")

@@ -54,12 +54,37 @@ class Result(BaseModel):
     formatted: str
 
 
+class PluginInfo(BaseModel):
+    """Model for the plugin information.
+
+    Attributes:
+        name (str): The name of the plugin.
+        module (str): The module of the plugin.
+        class_name (str): The class of the plugin.
+        type (str): The type of the plugin.
+        toml_path (str): The path to the TOML file.
+        plugin_obj (Any | None): The plugin object.
+        config (BaseModel | None): The configuration of the plugin.
+        uses (list[str] | None): The plugins that the plugin uses.
+        extra (dict[str, Any] | None): Extra information about the plugin.
+    """
+
+    name: str
+    module: str
+    class_name: str
+    type: str
+    toml_path: str | Path
+    plugin_obj: Any | None = None
+    config: Type[BaseModel] | None = None
+    uses: list[str] = []
+    extra: dict[str, Any] | None = None
+
 class PluginFlow(BaseModel):
     """Basic flow model for the plugins.
 
     Attributes:
         input_plugins (list[str]): List of input plugins.
-        assistant_plugins (list[str] | None): List of assistant plugins.
+        assistant_plugins (list[str]): List of assistant plugins.
         output_plugins (list[str]): List of output plugins.
     """
 
@@ -87,39 +112,14 @@ class PluginFlow(BaseModel):
         return self
 
     @property
-    def all_modules(self) -> list[str]:
-        """Returns all modules in the pipeline.
+    def all_visible_modules(self) -> list[str]:
+        """Returns all visible modules in the pipeline.
 
         Returns:
             list[str]: All modules in the pipeline.
         """
         return self.input_plugins + self.assistant_plugins + self.output_plugins
 
-
-class PluginInfo(BaseModel):
-    """Model for the plugin information.
-
-    Attributes:
-        name (str): The name of the plugin.
-        module (str): The module of the plugin.
-        class_name (str): The class of the plugin.
-        type (str): The type of the plugin.
-        toml_path (str): The path to the TOML file.
-        plugin_obj (Any | None): The plugin object.
-        config (BaseModel | None): The configuration of the plugin.
-        uses (list[str] | None): The plugins that the plugin uses.
-        extra (dict[str, Any] | None): Extra information about the plugin.
-    """
-
-    name: str
-    module: str
-    class_name: str
-    type: str
-    toml_path: str | Path
-    plugin_obj: Any | None = None
-    config: Type[BaseModel] | None = None
-    uses: list[str] = []
-    extra: dict[str, Any] | None = None
 
 
 class Pipeline(BaseModel):
@@ -295,7 +295,7 @@ class Registry(metaclass=SingletonMeta):
 
             logger.debug("Getting active plugins")
 
-            pipeline_modules = set(self.flow.all_modules)
+            pipeline_modules = set(self.flow.all_visible_modules)
 
             shallow_needed: list[PluginInfo] = []
             for item in [item for item in self.available_plugins if item.name in pipeline_modules]:
@@ -379,20 +379,46 @@ class Registry(metaclass=SingletonMeta):
         return getattr(module, class_name)
 
     # @logger.catch(reraise=True)
-    def load_active(self, config: dict):
+    def load_active_plugins(self, config: dict) -> list[tuple[str, str, Any]] | None:
         """Load the active plugins with the provided configuration.
 
         Args:
-            config (dict): The configuration to load the plugins with."""
+            config (dict): The configuration to load the plugins with.
+            
+        Returns:
+            list[tuple[str, str, Any]] | None: A list of needed fields if any are missing."""
+        
+        still_needed = []
 
+        # load the active plugins
         for plugin in self.active_plugins:
-            self.load(config, plugin)
+            try:
+                self.load_plugin(config, plugin) # load the plugin
+            except ValidationError:  # missing fields
+                plugin_config_model = plugin.config
+                if plugin_config_model is None:
+                    # no needed fields
+                    continue
+                else: # collect needed fields
+                    needed = [
+                        (name, plugin.name, info)
+                        for name, info in plugin_config_model.model_fields.items()
+                        if (name not in config) and (info.is_required)
+                    ]
+                    still_needed.extend(needed)
+                continue
 
-    def load(self, config: dict, plugin: PluginInfo):
-        """Load all plugins with the provided configuration.
+        # return needed fields if any
+        if len(still_needed) > 0:
+            return still_needed
+        else:
+            return None
+
+    def load_plugin(self, config: dict, plugin: PluginInfo):
+        """Load a specified with the provided configuration.
 
         Args:
-            config (dict): The configuration to load the plugins with.
+            config (dict): The configuration to load the plugin with.
             plugin (PluginInfo): The plugin to load.
         """
         logger.debug(f"Initializing plugin {plugin.name}")
@@ -408,36 +434,32 @@ class Registry(metaclass=SingletonMeta):
                 plugin_obj.set_data(item_config)
             plugin_obj.activate()
 
-    def produce_pipeline(self) -> Pipeline:
-        """Produce the pipeline from the active plugins.
-
-        Returns:
-            Pipeline: The produced pipeline."""
-        pipeline = Pipeline(
-            input_plugins=[plugin for plugin in self.active_plugins if plugin.name in self.flow.input_plugins],
-            assistant_plugins=[plugin for plugin in self.active_plugins if plugin.name in self.flow.assistant_plugins],
-            output_plugins=[plugin for plugin in self.active_plugins if plugin.name in self.flow.output_plugins],
-            dependencies=[plugin for plugin in self.active_plugins if plugin.name not in self.flow.all_modules],
-        )
-
-        return pipeline
-
-    def process_pipeline(self, pipeline: Pipeline):
+    def process_pipeline(self):
         """Process the pipeline.
         Runs all the plugins in their specified order.
 
         Args:
             pipeline (Pipeline): The pipeline to process."""
-        results = []
-        for plugin in pipeline.input_plugins:
-            result = self.handlers[plugin.type].process_plugin(plugin, [], self)
+        
+        # get the plugins in the pipeline
+        plugin_set = self.active_plugins
+        input_plugins = [plugin for plugin in plugin_set if plugin.name in self.flow.input_plugins]
+        assistant_plugins = [plugin for plugin in plugin_set if plugin.name in self.flow.assistant_plugins]
+        output_plugins = [plugin for plugin in plugin_set if plugin.name in self.flow.output_plugins
+        ]
+
+        results = [] # store the results of the pipeline
+        # process the input plugins
+        for plugin in input_plugins:
+            result = self.handlers[plugin.type].process_plugin(plugin, [], self) # dispatch the plugin to handler
             results.append(result)
 
-        if len(pipeline.assistant_plugins) == 0:
-            assistant_results = results
+        # process the assistant plugins, if any
+        if len(assistant_plugins) == 0:
+            assistant_results = results # skip assistant plugins
         else:
             assistant_results = []
-            for plugin in pipeline.assistant_plugins:
+            for plugin in assistant_plugins:
                 mixed_results = assistant_results.copy()
                 for x in results:
                     if x is type(list):
@@ -446,12 +468,15 @@ class Registry(metaclass=SingletonMeta):
                     else:
                         mixed_results.append(x)
 
-                result = self.handlers[plugin.type].process_plugin(plugin, mixed_results, self)
+                # dispatch the plugin to handler
+                # uses progressivly more results as the pipeline progresses
+                result = self.handlers[plugin.type].process_plugin(plugin, mixed_results, self) 
                 if isinstance(result, list):
                     for x in result:
                         assistant_results.append(x)
                 else:
                     assistant_results.append(result)
 
-        for plugin in pipeline.output_plugins:
-            self.handlers[plugin.type].process_plugin(plugin, assistant_results, self)
+        # process the output plugins
+        for plugin in output_plugins:
+            self.handlers[plugin.type].process_plugin(plugin, assistant_results, self) # dispatch the plugin to handler
