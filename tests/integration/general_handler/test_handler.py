@@ -1,10 +1,10 @@
 import pytest
 from modules.handlers.general_handler.general_handler import GeneralHandler
-from core.plugins import PluginFlow, Registry
+from opsbox.plugins import PluginFlow, Registry
 
 from unittest.mock import MagicMock
 
-from core.plugins import Result
+from opsbox.plugins import Result
 
 # ruff: noqa: S101
 

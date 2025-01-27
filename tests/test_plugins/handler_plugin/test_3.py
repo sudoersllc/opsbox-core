@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from core.plugins import Result, PluginInfo, Registry
+    from opsbox.plugins import Result, PluginInfo, Registry
 
 # Define a hookimpl (implementation of the contract)
 hookimpl = HookimplMarker("opsbox")

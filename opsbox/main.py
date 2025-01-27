@@ -1,5 +1,5 @@
-from core.config import AppConfig
-from core.cli import (
+from opsbox.config import AppConfig
+from opsbox.cli import (
     console,
     print_missing_arguments_error,
     print_pipeline_help,
@@ -11,7 +11,7 @@ from core.cli import (
     print_welcome_message,
     print_plugin_not_found_error,
 )
-from core.plugins import Registry, PluginNotFoundError
+from opsbox.plugins import Registry, PluginNotFoundError
 from loguru import logger
 import sys
 from json import JSONDecodeError

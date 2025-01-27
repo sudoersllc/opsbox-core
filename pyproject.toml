@@ -1,6 +1,6 @@
 [project]
 name = "opsbox"
-version = "0.1.6"
+version = "0.2.0"
 description = "AI-powered infrastructure management"
 readme = "README.md"
 requires-python = "==3.11.*"
@@ -40,10 +40,10 @@ Issues = "https://github.com/sudoersllc/opsbox-core/issues"
 
 
 [project.scripts]
-opsbox = "core.main:main"
+opsbox = "opsbox.main:main"
 
 [tool.setuptools]
-packages = ["core"]
+packages = ["opsbox"]
 
 [build-system]
 requires = ["setuptools>=42", "wheel"]
