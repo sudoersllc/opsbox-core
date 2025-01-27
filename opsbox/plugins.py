@@ -262,7 +262,8 @@ class Registry(metaclass=SingletonMeta):
 
                         plugin_module = getmodule(plugin_class)
                         logger.trace(f"Searching for manifest in {str(plugin_module)}. It's type is {str(type(plugin_module))}")
-                        with resources.files(plugin_module).joinpath("manifest.toml") as path, open(path, "rb") as toml_file:
+                        path = resources.files(plugin_module).joinpath("manifest.toml")
+                        with open(str(path), "rb") as toml_file:
                             plugin_config = toml.load(toml_file)
                             plugin_raw_info = plugin_config["info"]
                             plugin_raw_info["toml_path"] = path
