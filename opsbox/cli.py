@@ -3,7 +3,7 @@ from rich.align import Align
 from rich.table import Table
 from rich.text import Text
 from pydantic.fields import FieldInfo
-from opsbox.config import EssentialSettings
+from opsbox.config import ApplicationSettings
 
 console = Console()
 
@@ -176,18 +176,18 @@ def print_basic_args_help():
     """Print the help for the basic arguments."""
 
     table = Table(
-        caption="[bold]Here is a list of core arguments for the application.[/bold]",
+        caption="[bold]Here is a list of opsbox.arguments for the application.[/bold]",
     )
     table.add_column("Argument Name", justify="left", style="cyan")
     table.add_column("Description", justify="left", style="magenta")
     table.add_column("Required", justify="left", style="yellow")
 
-    for field_name, field_info in EssentialSettings.__fields__.items():
+    for field_name, field_info in ApplicationSettings.__fields__.items():
         table.add_row(field_name, field_info.description, str(field_info.is_required()))
 
     table = Align.left(table, vertical="middle")
 
-    console.rule("[bold red]Opsbox Core Arguments[/bold red]")
+    console.rule("[bold red]Opsbox opsbox.Arguments[/bold red]")
     console.print(table)
 
 
