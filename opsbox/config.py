@@ -51,6 +51,7 @@ class ApplicationSettings(BaseModel):
     init_debug: bool = Field(False, description="Enable debug logging during initialization. Used as a flag.")
     see_all: bool = Field(False, description="Show all plugins, including handlers and providers. Used as a flag.")
     help: bool = Field(False, description="Show help for the program or specified pipeline pipeline. Used as a flag.")
+    verbose: bool = Field(False, description="Enable verbose logging. Used as a flag.")
 
 class LLMValidator(BaseModel):
     """
@@ -93,6 +94,7 @@ class AppConfig(metaclass=SingletonMeta):
             dict | None: The configuration arguments. If no configuration is found, returns None.
         """
         # if default config file is set, load args from it
+        logger.trace(f"Loading configuration from {config_file} and {default_file_path}...")
         conf = {}
         default_config_file = find_config_file(default_file_path)
         expected_path = path.expanduser(f"~/{default_file_path}")
@@ -103,11 +105,11 @@ class AppConfig(metaclass=SingletonMeta):
                 with open(default_config_file, "r") as f:
                     document = json.load(f)
                     conf.update(document)
-                logger.debug(f"Loaded default config file {default_config_file}")
+                logger.trace(f"Loaded default config file {default_config_file}")
             except json.JSONDecodeError:
-                logger.warning(f"Default config file at {expected_path} is not valid JSON. Consider fixing that! Falling back...")
+                logger.warning(f"Default config file at {expected_path} is not valid JSON.")
         else:
-            logger.debug(f"No default config file found at {expected_path}. Falling back...")
+            logger.trace(f"No default config file found at {expected_path}.")
 
         # load the specified config file
         if config_file is not None:
@@ -115,13 +117,13 @@ class AppConfig(metaclass=SingletonMeta):
                 with open(config_file, "r") as f:
                     document = json.load(f)
                     conf.update(document)
-                logger.debug(f"Loaded config file {config_file}")
+                logger.trace(f"Loaded specified config file {config_file}")
             except FileNotFoundError:
-                logger.error(f"Config file {config_file} not found.")
+                logger.error(f"Specified config file {config_file} not found.")
                 raise FileNotFoundError(f"Config file {config_file} not found.")
             except json.JSONDecodeError:
-                logger.error(f"Config file {config_file} is not valid JSON.")
-                raise json.JSONDecodeError(f"Config file {config_file} is not valid JSON.")
+                logger.error(f"Specified config file {config_file} is not valid JSON.")
+                raise json.JSONDecodeError(f"Specified config file {config_file} is not valid JSON.")
             
         return (conf if conf != {} else None)
 
@@ -132,8 +134,7 @@ class AppConfig(metaclass=SingletonMeta):
         Returns:
             dict | None: The command line arguments in {arg: value} format. If no arguments are found, returns None.
         """
-        logger.debug(f"Parsing {len(sys.argv)-1} command line arguments...")
-
+        logger.trace(f"Parsing {len(sys.argv)-1} command line pieces...")
 
         raw_cmd_args = sys.argv[1:] # Skip the script name and break the arguments into chunks
 
@@ -204,6 +205,8 @@ class AppConfig(metaclass=SingletonMeta):
             else:
                 # otherwise, just convert the value
                 arg_dict[arg_label] = convert_to_numeric(arg_chunk[1])
+
+        logger.trace(f"Processed {len(arg_dict)} command line arguments.")
         
         return (arg_dict if arg_dict != {} else None)
 
@@ -212,23 +215,25 @@ class AppConfig(metaclass=SingletonMeta):
 
         Returns:
             tuple[dict, PluginFlow]: The configuration arguments and the plugin flow."""
-        logger.debug("Grabbing configuration arguments...")
         total_config = {}
 
         # load the command line arguments
         cli_config = self._parse_cmd_arguments()
         if cli_config is not None:
             total_config.update(cli_config)
+            logger.debug(f"Loaded {len(cli_config)} command line arguments.")
 
         # load the configuration from both the default and specified configuration files
         json_file_config = self._parse_json_arguments(config_file=total_config.get("config"))
         if json_file_config is not None:
             total_config.update(json_file_config)
+            logger.debug(f"Loaded {len(json_file_config)} configuration file arguments.")
 
         # load environment variables
         lower_case_environ = {key.lower(): value for key, value in environ.items()}
         total_config.update(lower_case_environ)  # load any environment variables
-
+        logger.debug(f"Loaded {len(lower_case_environ)} environment variables as configuration arguments.")
+        
         # set the pipeline
         pipeline = PluginFlow().set_flow(total_config["modules"]) if "modules" in total_config else None
 
@@ -271,6 +276,7 @@ class AppConfig(metaclass=SingletonMeta):
 
         # load plugins
         if hasattr(self, "plugin_flow") is False and self.basic_settings.help:
+            logger.debug("Help flag is set and no plugin_flow found. Exiting load method.")
             return None
         
         self.registry = Registry(self.plugin_flow, plugin_dir=self.basic_settings.plugin_dir)
@@ -309,8 +315,10 @@ class AppConfig(metaclass=SingletonMeta):
         """
         # don't repeat yourself
         if all([hasattr(self, "basic_settings"), hasattr(self, "plugin_flow"), hasattr(self, "module_settings")]):
-            logger.trace("Using existing settings.")
+            logger.trace("Using cached settings.")
             return
+        else:
+            logger.trace("No cache created. Initializing settings.")
         
         # grab arguments from environment, command line, or config fils
         conf, flow = self._grab_args()
@@ -320,8 +328,9 @@ class AppConfig(metaclass=SingletonMeta):
             conf["modules"] = flow.all_visible_modules
             self.plugin_flow = flow # set the plugin flow
         except AttributeError:
-            if load_modules or conf.get("help", False):
+            if not load_modules or conf.get("help", False):
                 conf["modules"] = "help_mode"
+                logger.trace("Setting modules to help mode.")
                 pass
             else:
                 raise ValueError("No modules specified in configuration.")
@@ -330,6 +339,7 @@ class AppConfig(metaclass=SingletonMeta):
         self.basic_settings = ApplicationSettings(**conf)
         self.llm_settings = LLMValidator(**conf)
         self.module_settings = conf
+        logger.debug("Settings initialized.")
     
     @logger.catch(reraise=True)
     def grab_conf_environment_plugins(self) -> list[tuple[str, str]] | None:

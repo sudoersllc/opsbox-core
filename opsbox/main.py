@@ -18,8 +18,35 @@ from json import JSONDecodeError
 
 from sys import argv
 
+import yaml
 
-def start_logging(log_level: str | None = None, log_file: str | None = None):
+
+def verbose_formatter(record):
+    """Format the log record for the CLI."""
+    format_str = (
+    "<green>{time:YYYY-MM-DD HH:mm:ss.SSS Z}</green> | "
+    "<level>{level: <8}</level> | "
+    "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>\n"
+    )
+
+    #if we have an extra dict, we want to filter out all double underscore keys
+    if "extra" in record:
+        extra_fields = {k: v for k, v in record["extra"].items() if "__" not in k}
+        if extra_fields == {}:  # if there are no extra fields, return the format string
+            return format_str
+        else:
+            # format as yaml
+            extra_str = yaml.dump(extra_fields["extra"], default_flow_style=False, sort_keys=False)
+
+            # remove the newline at the end and chars that could trip up str.format
+            extra_str = extra_str.replace("{", "").replace("}", "")
+            extra_str = f"<magenta>Extra Data:\n</magenta><yellow>{extra_str}</yellow>"
+            format_str = f"{format_str}{extra_str}"
+
+    return format_str
+
+
+def start_logging(log_level: str | None = None, log_file: str | None = None, verbose: bool = False):
     """Start logging to a file.
 
     Args:
@@ -28,8 +55,14 @@ def start_logging(log_level: str | None = None, log_file: str | None = None):
     """
     if log_level is None:
         log_level = "INFO"
-    logger.add(sys.stdout, level=log_level, colorize=True, diagnose=True, enqueue=True)
-    logger.debug("Started logging to stdout.")
+
+    if verbose:
+        logger.add(sys.stdout, level=log_level, colorize=True, diagnose=True, enqueue=True, format=verbose_formatter)
+        logger.debug("Started verbose logging to stdout.")
+    else:
+        logger.add(sys.stdout, level=log_level, colorize=True, diagnose=True, enqueue=True)
+        logger.debug("Started logging to stdout.")
+
     if log_file is not None:
         logger.add(log_file, level=log_level, rotation="10 MB", compression="zip", serialize=True)
         logger.debug(f"Started logging to {log_file}.")
@@ -56,7 +89,7 @@ def main():
 
         # init logger
         logger.remove()  # re-initialize logger
-        start_logging(app_config.basic_settings.log_level, app_config.basic_settings.log_file)
+        start_logging(app_config.basic_settings.log_level, app_config.basic_settings.log_file, app_config.basic_settings.verbose)
 
         # load config
         missing_fields = app_config.load(all_fields=app_config.basic_settings.help)
