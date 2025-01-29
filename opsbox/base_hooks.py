@@ -5,7 +5,7 @@ from loguru import logger
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from core.plugins import PluginInfo, Result, Registry
+    from opsbox.plugins import PluginInfo, Result, Registry
 
 
 hookspec = pluggy.HookspecMarker("opsbox")

@@ -1,7 +1,7 @@
 from pluggy import HookimplMarker
 from pydantic import BaseModel, Field
 
-from core.plugins import Result
+from opsbox.plugins import Result
 
 # Define a hookimpl (implementation of the contract)
 hookimpl = HookimplMarker("opsbox")

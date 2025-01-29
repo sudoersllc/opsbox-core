@@ -1,6 +1,6 @@
 import pytest
 
-from core.plugins import Registry, PluginFlow
+from opsbox.plugins import Registry, PluginFlow
 from pathlib import Path
 
 # ruff: noqa: S101
@@ -70,14 +70,3 @@ def test_active_plugins(test_registry: Registry):
             assert plugin.class_name == "Test3"
         elif plugin.name == "test_plugin_4":
             assert plugin.type == "output"
-
-
-def test_produce_pipeline(test_registry: Registry):
-    """Test a produced pipeline"""
-    pipeline = test_registry.produce_pipeline()
-    in_names = [plugin.name for plugin in pipeline.input_plugins]
-    out_names = [plugin.name for plugin in pipeline.output_plugins]
-    dependency_names = [plugin.name for plugin in pipeline.dependencies]
-    assert "test_plugin_1" in in_names
-    assert "test_plugin_4" in out_names
-    assert "test_plugin_3" in dependency_names

@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from core.config import AppConfig
+from opsbox.config import AppConfig
 
 # ruff: noqa: S101
 

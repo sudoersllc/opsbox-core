@@ -1,5 +1,5 @@
 from pluggy import HookimplMarker
-from core.plugins import Result
+from opsbox.plugins import Result
 
 
 hookimpl = HookimplMarker("opsbox")

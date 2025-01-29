@@ -7,7 +7,7 @@ hookimpl = HookimplMarker("opsbox")
 
 
 if TYPE_CHECKING:
-    from core.plugins import Result
+    from opsbox.plugins import Result
 
 
 class CLIOutput:

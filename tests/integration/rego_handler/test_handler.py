@@ -1,6 +1,6 @@
 from modules.handlers.rego_handler.rego_handler import RegoHandler
 
-from core.plugins import PluginFlow, Result
+from opsbox.plugins import PluginFlow, Result
 from unittest.mock import MagicMock
 from tests.mocks import MockPlugin, MockConfig, MockRegistry
 from tests.test_plugins.rego_plugin.test_2 import Test2
