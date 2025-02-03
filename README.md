@@ -12,134 +12,128 @@ Welcome to Opsbox, the open-source platform that adds a dash of AI magic to your
 - 💻 **Command-Line Interface**: An interactive CLI.
 - 📚 **Documentation Support**: Generate and view documentation effortlessly using mkdocs.
 
-## Installation
+# Installation
 
-Ready to dive in? Let's get you set up!
+## Prerequisites
 
-### Prerequisites
+Ensure you have [Python 3.11](https://www.python.org/downloads/) installed.
 
-- **Python 3.11**
-- **uv**
+For an isolated installation, use either [UV](https://docs.astral.sh/uv/) or [pipx](https://pipx.pypa.io/stable/).
 
-### Through PyPI
+For **development** or [installing from source](#install-from-source), you'll need [UV](https://docs.astral.sh/uv/).
 
-Simply run `pip install opsbox` to install the minimal set of opsbox tools.
+For **Rego plugins**, [install OPA](#installing-opa-for-rego-compatibility).
 
-If using UV, initilize your project using `uv init`.
+---
 
-then `uv add opsbox`
+## (Recommended) Install in an Isolated Environment
 
-*Note: If you want to install AWS plugins, use the aws extras group, `opsbox[aws]`*
+Installing in an isolated environment avoids system conflicts and pollution.
 
-### Through Github
+### Using UV
 
-1. **Clone the Repository**
-
-    ```bash
-    git clone https://github.com/sudoersllc/Opsbox.git
-    cd Opsbox
-    ```
-
-2. **Install with uv**
-
-    We use [`uv`] for managing dependencies. If you don't have it installed, you can get it via pip:
-
-    ```bash
-    pip install uv
-    ```
-
-
-
-    Now, let's install Opsbox:
-
-    ```bash
-    uv sync
-    ```
-
-    This command will install all required dependencies specified in `pyproject.toml`.
-
-### Using Rego Plugins
-Open Policy Agent (OPA) is an open-source policy engine that enables organizations to implement policy as code across diverse environments. Its policy language, Rego, allows users to define rules that dictate system and application behavior.
-
-We use rego code to gather details about connected systems, alongside an Open Policy Agent (OPA) server, then format it for consumption by a language model.
-
-#### Create a OPA Policy docker image
-To run OpsBox with rego plugins, you'll need an OPA server. This is because OpsBox uses OPA to enforce policies on all resources that are being managed.
-
-if you don't have OPA installed on your machine, or you dont have a running OPA instance, you can create a docker image for OPA.
-
-Start by [installing docker](https://docs.docker.com/engine/install/).
-
-Create a dockerfile and add the following code:
-```docker
-    # Use the official OPA image
-    FROM openpolicyagent/opa:latest
-
-    # Expose OPA's default port
-    EXPOSE 8181
-
-    # Run OPA with the specified policy file
-    CMD ["run", "--server", "--addr", "0.0.0.0:8181"]
-```
-
-Navigate to the directory and Build the Docker image:
+#### Installation
 ```bash
-    docker build -t opa-server .
+uv tool install opsbox
 ```
-or you can also follow the offical OPA documentation to create the engine: [OPA Documentation](https://www.openpolicyagent.org/docs/latest/)
-
-Finally, run the OPA server as follows:
+To install with extras:
 ```bash
-    docker run -d -p 8181:8181 --name opa-server opa-server
+uv tool install --with "opsbox-cli-output" "opsbox[aws]"
 ```
-
-The docker image can be found here:
-(https://hub.docker.com/r/openpolicyagent/opa/)
-
+To add packages after installation:
 ```bash
-    docker run -d -p 8181:8181 --name opa openpolicyagent/opa run --server --addr=0.0.0.0:8181*
+uv tool install --with "existing-packages new-package"
 ```
+> **Warning:** If UV downloads the wrong version or can't find a package, clear the cache:
+> ```bash
+> uv cache clean
+> ```
 
-## Running Opsbox
-
-Time to see the magic in action!
-
-Simply run:
-
+#### Execution
 ```bash
-uv run opsbox ...
+uv tool run opsbox ...
 ```
-
-or, if not using UV:
-
+Or:
 ```bash
-python -m opsbox ...
+uvx opsbox ...
+```
+> **Warning:** Do not use `--with` during execution; it creates a temporary environment.
+
+### Using pipx
+
+#### Installation
+```bash
+pipx install opsbox
+```
+To install additional packages:
+```bash
+pipx inject opsbox opsbox-cli-output
+```
+To ensure `opsbox` is in your PATH:
+```bash
+pipx ensurepath
+```
+Run `opsbox` directly in your shell.
+
+---
+
+## (Not Recommended) Install from Source
+
+For development or debugging, install from source using UV.
+
+### Installation
+```bash
+git clone https://github.com/sudoersllc/opsbox-core.git
+cd opsbox-core
+uv sync
+```
+> **Note:** If you encounter Python versioning issues:
+> ```bash
+> uv python install 3.11
+> rm .python-version
+> uv python pin 3.11
+> ```
+
+### Execution
+Run `opsbox/main.py` inside the virtual environment:
+```bash
+uv run ./opsbox/main.py ...
 ```
 
-This will launch Opsbox and display the CLI help along with available commands.
+---
+
+## Installing OPA for Rego Compatibility
+
+If using Rego (e.g., AWS plugins), install [OPA](https://www.openpolicyagent.org/docs/latest/#running-opa) and add it to your system `PATH`.
+
+### Adding OPA to PATH
+
+#### Linux/macOS
+```bash
+echo 'export PATH=$PATH:/path/to/opa' >> ~/.bashrc
+source ~/.bashrc  # or source ~/.zshrc
+```
+#### Windows
+1. Open "Edit the system environment variables" > "Environment Variables...".
+2. Edit "Path" and add `C:\path\to\opa\directory`.
+3. Restart your terminal.
+
+> **Note:** To use an existing OPA server, pass its URL in `opa_url`.
+
+---
 
 ### Example Usage
 
 Want to run a specific pipeline? Here's how:
 
 ```bash
-uv run opsbox --modules your_input-your_optional_assistant-your_output --opa_url http://your-opa-url 
+uv run opsbox --modules your_input-your_optional_assistant-your_output
 ```
 
 A recommended command to start is stray_ebs make sure you have opsbox[aws] and opsbox-cli-output installed
 
 ```bash
-uv run opsbox --modules stray_ebs-cli_out --opa_url http://localhost:8181/ --aws_access_key_id {YOUR_ACCESS_KEY_ID} --aws_secret_access_key {YOUR_SECRET_ACCESS_KEY} --aws_region us-east-1
-```
-
-or, if not using UV:
-
-```bash
-python -m opsbox --modules your_input-your_optional_assistant-your_output --opa_url http://your-opa-url 
-```
-
-```bash
-python -m opsbox --modules stray_ebs-cli_out --opa_url http://localhost:8181/ --aws_access_key_id {YOUR_ACCESS_KEY_ID} --aws_secret_access_key {YOUR_SECRET_ACCESS_KEY} --aws_region us-east-1
+uv run opsbox --modules stray_ebs-cli_out --aws_access_key_id {YOUR_ACCESS_KEY_ID} --aws_secret_access_key {YOUR_SECRET_ACCESS_KEY} --aws_region us-east-1
 ```
 
 ## Configuration
@@ -159,7 +153,6 @@ Create a file named `.opsbox_conf.json` in your home directory:
   "aws_access_key_id": "YOUR_ACCESS_KEY_ID",
   "aws_secret_access_key": "YOUR_SECRET_ACCESS_KEY",
   "aws_region": "YOUR_AWS_REGION",
-  "opa_url": "http://your-opa-url",
 }
 ```
 
@@ -173,7 +166,7 @@ uv run opsbox --modules stray_ebs-cli_out --config config.json
 You can also provide configuration options directly through the command line:
 
 ```bash
-python -m opsbox --modules example_module --aws_access_key_id YOUR_ACCESS_KEY_ID --aws_secret_access_key YOUR_SECRET_ACCESS_KEY --aws_region YOUR_AWS_REGION --opa_url http://your-opa-url 
+uvx opsbox --modules example_module --aws_access_key_id YOUR_ACCESS_KEY_ID --aws_secret_access_key YOUR_SECRET_ACCESS_KEY --aws_region YOUR_AWS_REGION
 ```
 
 ## Plugins
