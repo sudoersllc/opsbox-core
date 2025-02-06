@@ -46,9 +46,7 @@ class HandlerSpec:
         """Add the hookspecs to the manager."""
 
     @hookspec
-    def process_plugin(
-        self, plugin: "PluginInfo", prior_results: list["Result"], registry: "Registry"
-    ) -> list["Result"]:
+    def process_plugin(self, plugin: "PluginInfo", prior_results: list["Result"], registry: "Registry") -> list["Result"]:
         """Process the plugin."""
 
 

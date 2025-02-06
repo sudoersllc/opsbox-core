@@ -23,13 +23,9 @@ import yaml
 
 def verbose_formatter(record):
     """Format the log record for the CLI."""
-    format_str = (
-    "<green>{time:YYYY-MM-DD HH:mm:ss.SSS Z}</green> | "
-    "<level>{level: <8}</level> | "
-    "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>\n"
-    )
+    format_str = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS Z}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>\n"
 
-    #if we have an extra dict, we want to filter out all double underscore keys
+    # if we have an extra dict, we want to filter out all double underscore keys
     if "extra" in record:
         extra_fields = {k: v for k, v in record["extra"].items() if "__" not in k}
         if extra_fields == {}:  # if there are no extra fields, return the format string
