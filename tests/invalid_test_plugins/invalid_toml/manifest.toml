@@ -1,0 +1,9 @@
+[info]
+name = "test_plugin_7"
+module = "test_7"
+class_name = "Test7"
+type = "rego_te
+
+[rego]
+description = "Check for inactive S3 objects."
+rego_file = "test_7.rego"

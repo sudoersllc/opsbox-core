@@ -1,0 +1,5 @@
+
+
+[rego]
+description = "Check for inactive S3 objects."
+rego_file = "test_6.rego"
