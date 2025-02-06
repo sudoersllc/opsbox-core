@@ -4,7 +4,8 @@ from opsbox.plugins import Registry
 from pydantic import ValidationError
 from tomllib import TOMLDecodeError
 
-# ruff: noqa: S101 
+# ruff: noqa: S101
+
 
 def test_toml_load_success(test_registry: Registry):
     """Test the loading of a TOML file."""
@@ -22,11 +23,13 @@ def test_toml_load_success(test_registry: Registry):
     assert item.extra["rego"]["description"] == description
     assert item.extra["rego"]["rego_file"] == rego_file
 
+
 def test_toml_spec_validation_err(test_registry: Registry):
     """Test the loading of a TOML file."""
     registry = test_registry
     with pytest.raises((ValidationError, KeyError)):
         registry.read_toml_spec("tests/invalid_test_plugins/invalid_key/manifest.toml")
+
 
 def test_toml_spec_decode_err(test_registry: Registry):
     """Test the loading of a TOML file."""

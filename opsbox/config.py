@@ -122,8 +122,8 @@ class AppConfig(metaclass=SingletonMeta):
             except json.JSONDecodeError as e:
                 logger.error(f"Specified config file {config_file} is not valid JSON.")
                 raise e
-            
-        return (conf if conf != {} else None)
+
+        return conf if conf != {} else None
 
     def _parse_cmd_arguments(self) -> dict | None:
         """Parse the command line arguments and return them as a dictionary.

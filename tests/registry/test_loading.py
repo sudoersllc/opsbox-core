@@ -3,6 +3,7 @@ from pathlib import Path
 
 # ruff: noqa: S101
 
+
 def test_grab_class(test_registry: Registry):
     """Test the grab class method."""
     # Grab the registry and plugins
@@ -16,6 +17,7 @@ def test_grab_class(test_registry: Registry):
     # Assert proprt class name
     assert plugin.__name__ == "Test2"
 
+
 def test_loading_active_fail(test_registry: Registry):
     """Test the loading of active plugins."""
     registry = test_registry
@@ -23,6 +25,7 @@ def test_loading_active_fail(test_registry: Registry):
 
     # test if proper missing fields are raised
     assert len(needed) == 3
+
 
 def test_loading_active_success(test_registry: Registry):
     """Test the loading of active plugins."""
@@ -40,6 +43,7 @@ def test_loading_active_success(test_registry: Registry):
     # test if proper missing fields are raised
     assert needed is None
 
+
 def test_loading_active_success_from_entrypoints(registry_no_plugindir: Registry):
     """Test the loading of active plugins."""
     registry = registry_no_plugindir
@@ -56,6 +60,7 @@ def test_loading_active_success_from_entrypoints(registry_no_plugindir: Registry
     # test if proper missing fields are raised
     assert needed is None
 
+
 def test_loading_active_fail_from_entrypoints(registry_no_plugindir: Registry):
     """Test the loading of active plugins."""
     registry = registry_no_plugindir
@@ -63,6 +68,7 @@ def test_loading_active_fail_from_entrypoints(registry_no_plugindir: Registry):
 
     # test if proper missing fields are raised
     assert len(needed) == 3
+
 
 def test_proccess_active_plugins(test_registry: Registry):
     """Test the processing of active plugins."""

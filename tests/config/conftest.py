@@ -17,5 +17,3 @@ def app_config():
     # Nuke the singleton instances
     config._instances = {}
     Registry._instances = {}
-
-

@@ -15,6 +15,7 @@ from io import StringIO
 
 # ruff: noqa: S101
 
+
 @pytest.fixture
 def mock_console():
     """Mock the rich console object for capturing output."""
@@ -63,6 +64,7 @@ def test_print_available_plugins(mock_console):
 
 def test_print_pipeline_help(mock_console):
     """Test the pipeline help message."""
+
     class MockFieldInfo:
         description = "desc"
 
@@ -90,6 +92,7 @@ def test_print_basic_args_help(mock_console):
 
 def test_print_missing_arguments_error(mock_console):
     """Test the missing arguments error message."""
+
     class MockFieldInfo:
         description = "desc"
 

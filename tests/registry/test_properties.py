@@ -6,12 +6,14 @@ from pathlib import Path
 
 # ruff: noqa: S101
 
+
 @pytest.fixture(scope="module")
 def test_registry_bad():
     """Fixture for the registry with a dummy pipeline."""
     Registry._instances = {}
     pipeline = PluginFlow(input_plugins=["test_plugin_123", "test_plugin_234"], output_plugins=["test_plugin_456"])
     return Registry(flow=pipeline, plugin_dir="tests/test_plugins")
+
 
 def test_available_plugins(test_registry: Registry):
     """Test the available plugins."""
@@ -54,11 +56,13 @@ def test_active_plugins_success(test_registry: Registry):
         elif plugin.name == "test_plugin_4":
             assert plugin.type == "output"
 
+
 def test_active_plugins_no_deps(test_registry_bad: Registry):
     """Test the active plugins."""
     registry = test_registry_bad
     with pytest.raises(PluginNotFoundError):
         registry.active_plugins
+
 
 def test_available_from_entrypoints(registry_no_plugindir: Registry):
     """Test the available plugins."""
@@ -67,6 +71,7 @@ def test_available_from_entrypoints(registry_no_plugindir: Registry):
     plugins = registry.available_plugins
 
     assert len(plugins) == 5
+
 
 def test_active_from_entrypoints(registry_no_plugindir: Registry):
     """Test the active plugins."""
