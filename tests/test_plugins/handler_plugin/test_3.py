@@ -15,9 +15,7 @@ class Test3:
     """Third test plugin."""
 
     @hookimpl
-    def process_plugin(
-        self, plugin: "PluginInfo", prior_results: list["Result"], registry: "Registry"
-    ) -> list["Result"]:
+    def process_plugin(self, plugin: "PluginInfo", prior_results: list["Result"], registry: "Registry") -> list["Result"]:
         """Process the plugin."""
         logger.info("Processing plugin.")
 
