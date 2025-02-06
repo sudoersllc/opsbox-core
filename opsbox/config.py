@@ -9,7 +9,6 @@ import json
 import dateparser
 
 
-
 from loguru import logger
 
 
@@ -29,7 +28,7 @@ def find_config_file(filename: str) -> str | None:
 
 class ApplicationSettings(BaseModel):
     """The class is used to store the essential settings for the application.
-    
+
     Attributes:
         modules (list[str]): The modules to load in pipeline format.
         config (str): The path to the configuration file.
@@ -42,9 +41,7 @@ class ApplicationSettings(BaseModel):
     """
 
     modules: list[str] | str = Field(..., description="List of modules to load in pipeline format.")
-    config: str | None = Field(
-        default=find_config_file(".opsbox_conf.json"), description="Path to the configuration file."
-    )
+    config: str | None = Field(default=find_config_file(".opsbox_conf.json"), description="Path to the configuration file.")
     plugin_dir: str | None = Field(None, description="Directory to load plugins from instead of environment. Useful for local development.")
     log_level: str | None = Field(None, description="Desired logging level. One of 'INFO', 'TRACE', 'DEBUG', 'WARNING', or 'CRITICAL'. Default is 'INFO'")
     log_file: str | None = Field(None, description="Path to the desired logging file.")
@@ -52,6 +49,7 @@ class ApplicationSettings(BaseModel):
     see_all: bool = Field(False, description="Show all plugins, including handlers and providers. Used as a flag.")
     help: bool = Field(False, description="Show help for the program or specified pipeline pipeline. Used as a flag.")
     verbose: bool = Field(False, description="Enable verbose logging. Used as a flag.")
+
 
 class LLMValidator(BaseModel):
     """
@@ -82,14 +80,14 @@ class AppConfig(metaclass=SingletonMeta):
         self.embed_model (LLMEmbedding | None): The LLM embedding model for the application.
     """
 
-    def _parse_json_arguments(self, config_file: str, default_file_path: str = ".opsbox.json") -> dict  | None:
+    def _parse_json_arguments(self, config_file: str, default_file_path: str = ".opsbox.json") -> dict | None:
         """Loads the configuration from the default configuration file, if it exists.
         Then, it loads the configuration from the specified configuration file.
 
         Args:
             config_file (str): The path to the configuration file.
             default_file_path (str): The path to the default configuration file from the user's home directory.
-        
+
         Returns:
             dict | None: The configuration arguments. If no configuration is found, returns None.
         """
@@ -134,16 +132,16 @@ class AppConfig(metaclass=SingletonMeta):
         Returns:
             dict | None: The command line arguments in {arg: value} format. If no arguments are found, returns None.
         """
-        logger.trace(f"Parsing {len(sys.argv)-1} command line pieces...")
+        logger.trace(f"Parsing {len(sys.argv) - 1} command line pieces...")
 
-        raw_cmd_args = sys.argv[1:] # Skip the script name and break the arguments into chunks
+        raw_cmd_args = sys.argv[1:]  # Skip the script name and break the arguments into chunks
 
         # split the arguments into chunks of arguments, where the first element is the argument name
         # and the rest are the values associated with that argument
         processed_args = []
         current_slice = None
         for arg in raw_cmd_args:
-            if arg.startswith("--"): # we have a new argument
+            if arg.startswith("--"):  # we have a new argument
                 # pop the current slice if it exists
                 if current_slice is not None:
                     processed_args.append(current_slice)
@@ -162,14 +160,14 @@ class AppConfig(metaclass=SingletonMeta):
         # add the last slice if it exists
         if current_slice is not None:
             processed_args.append(current_slice)
-            
+
         # define a helper function for converting numbers
         def convert_to_numeric(value: str) -> int | float | str | datetime:
             """Convert the value to an integer or float if possible.
-            
+
             Args:
                 value: The value to convert.
-            
+
             Returns:
                 int | float | str | datetime: The converted value.
             """
@@ -183,14 +181,14 @@ class AppConfig(metaclass=SingletonMeta):
                 return float(value)
             except ValueError:
                 pass
-            
+
             # try to convert the value to a datetime object
             item = dateparser.parse(value)
             if item is None:
                 return value
             else:
                 return item
-        
+
         # process the arguments into a dictionary
         arg_dict = {}
         for arg_chunk in processed_args:
@@ -207,8 +205,8 @@ class AppConfig(metaclass=SingletonMeta):
                 arg_dict[arg_label] = convert_to_numeric(arg_chunk[1])
 
         logger.trace(f"Processed {len(arg_dict)} command line arguments.")
-        
-        return (arg_dict if arg_dict != {} else None)
+
+        return arg_dict if arg_dict != {} else None
 
     def _grab_args(self) -> tuple[dict, PluginFlow]:
         """Grab the configuration arguments from the environment, command line, or configuration file.
@@ -233,12 +231,12 @@ class AppConfig(metaclass=SingletonMeta):
         lower_case_environ = {key.lower(): value for key, value in environ.items()}
         total_config.update(lower_case_environ)  # load any environment variables
         logger.debug(f"Loaded {len(lower_case_environ)} environment variables as configuration arguments.")
-        
+
         # set the pipeline
         pipeline = PluginFlow().set_flow(total_config["modules"]) if "modules" in total_config else None
 
         return total_config, pipeline
-    
+
     def init_llms(self) -> None:
         """Initialize the LLMs for the application."""
         # set the LLM
@@ -278,7 +276,7 @@ class AppConfig(metaclass=SingletonMeta):
         if hasattr(self, "plugin_flow") is False and self.basic_settings.help:
             logger.debug("Help flag is set and no plugin_flow found. Exiting load method.")
             return None
-        
+
         self.registry = Registry(self.plugin_flow, plugin_dir=self.basic_settings.plugin_dir)
 
         # if we want to retreive all fields, we need to load all plugins
@@ -290,24 +288,21 @@ class AppConfig(metaclass=SingletonMeta):
                 if model is None:
                     continue
                 else:
-                    fields = [
-                        (name, item.name, info)
-                        for name, info in model.model_fields.items()
-                    ]
+                    fields = [(name, item.name, info) for name, info in model.model_fields.items()]
                     needed_args.extend(fields)
             return needed_args
         else:
             conf = self.module_settings
             still_needed = self.registry.load_active_plugins(conf)
             return still_needed
-        
+
     @logger.catch(reraise=True)
     def init_settings(self, load_modules: bool = True) -> None:
         """Initialize the opsbox.settings for the application.
         Will grab the configuration arguments from the environment, command line, or configuration file.
-        
+
         Sets the `basic_settings`, `plugin_flow`, and `module_settings` attributes.
-        
+
         Args:
             load_modules (bool): Whether to load the modules or not. Defaults to True.
         """
@@ -317,14 +312,14 @@ class AppConfig(metaclass=SingletonMeta):
             return
         else:
             logger.trace("No cache created. Initializing settings.")
-        
+
         # grab arguments from environment, command line, or config fils
         conf, flow = self._grab_args()
 
         # set the modules, if specified
         try:
             conf["modules"] = flow.all_visible_modules
-            self.plugin_flow = flow # set the plugin flow
+            self.plugin_flow = flow  # set the plugin flow
         except AttributeError:
             if not load_modules or conf.get("help", False):
                 conf["modules"] = "help_mode"
@@ -338,18 +333,18 @@ class AppConfig(metaclass=SingletonMeta):
         self.llm_settings = LLMValidator(**conf)
         self.module_settings = conf
         logger.debug("Settings initialized.")
-    
+
     @logger.catch(reraise=True)
     def grab_conf_environment_plugins(self) -> list[tuple[str, str]] | None:
         """Fetch the available plugins for this configuration evironment.
 
         Returns:
             list[tuple[str, str, str]] | None: A list of the available plugins.
-                In the format [(plugin_name, plugin_type, plugin_uses), ...]        
+                In the format [(plugin_name, plugin_type, plugin_uses), ...]
         """
         # initialize basic settings
         self.init_settings()
-        flow = PluginFlow() # dummy flow
+        flow = PluginFlow()  # dummy flow
 
         # load the plugins available for this environment
         temp_registry = Registry(flow, plugin_dir=self.basic_settings.plugin_dir)

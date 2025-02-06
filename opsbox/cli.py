@@ -54,27 +54,29 @@ If you need help with a specific pipeline, please use the [bold]--help[/bold] fl
     style="green",
 )
 
+
 def print_plugin_not_found_error(plugin_dir: str | None, e: Exception):
-        """Print an error message for when a plugin is not found.
-        
-        Args:
-            plugin_dir (str | None): The plugin directory that was searched.
-            e (Exception): The exception that was raised."""
-        if plugin_dir is not None:
-            markup = f"""[bold red]It seems like one or more plugins you specified were not able to be found![/bold red]
+    """Print an error message for when a plugin is not found.
+
+    Args:
+        plugin_dir (str | None): The plugin directory that was searched.
+        e (Exception): The exception that was raised."""
+    if plugin_dir is not None:
+        markup = f"""[bold red]It seems like one or more plugins you specified were not able to be found![/bold red]
 
 [bold red]Please check the active plugin_dir {plugin_dir}.[/bold red]
 
 Error: {e}
 """
-        else:
-            markup = f"""[bold red]It seems like one or more plugins you specified were not able to be found![/bold red]
+    else:
+        markup = f"""[bold red]It seems like one or more plugins you specified were not able to be found![/bold red]
 
 [bold red]Please check the virtual environment for your desired plugin packages.[/bold red]
 
 Error: {e}
 """
-        console.print(markup)
+    console.print(markup)
+
 
 def print_missing_arguments_error(modules: list[str], arguments: list[tuple[str, str, FieldInfo]]):
     """Display a table of missing arguments for a given pipeline.
@@ -224,5 +226,5 @@ Reconfigure your pipeline to see more arguments.[/bold]""",
     console.print(table)
 
     # Reminder to view documentation
-    doc_str = "\n[bold]For more information, please refer to the documentation found at the " "`opsbox-docs` repo.[/bold]"
+    doc_str = "\n[bold]For more information, please refer to the documentation found at the `opsbox-docs` repo.[/bold]"
     console.print(doc_str)

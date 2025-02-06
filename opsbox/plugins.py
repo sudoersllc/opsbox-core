@@ -222,7 +222,7 @@ class Registry(metaclass=SingletonMeta):
             if self.plugin_dir is not None:
                 # load the plugins from the plugin directory if specified
                 logger.debug(f"Finding plugins available in directory {self.plugin_dir}")
-                skipped : list[str] = [] # store skipped plugins
+                skipped: list[str] = []  # store skipped plugins
                 for item in Path(self.plugin_dir).rglob("*.toml"):
                     try:
                         info = self.read_toml_spec(item, log=False)
