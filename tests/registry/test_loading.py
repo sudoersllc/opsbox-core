@@ -1,4 +1,5 @@
 from opsbox.plugins import Registry
+from pathlib import Path
 
 # ruff: noqa: S101
 
@@ -9,7 +10,8 @@ def test_grab_class(test_registry: Registry):
     rego_plugin = [item for item in registry.active_plugins if item.name == "test_plugin_2"][0]
 
     # Grab the rego plugin
-    plugin = registry._grab_plugin_class("tests\\test_plugins\\rego_plugin\\", rego_plugin)
+    plugin_path = Path("tests/test_plugins/rego_plugin/")
+    plugin = registry._grab_plugin_class(plugin_path, rego_plugin)
 
     # Assert proprt class name
     assert plugin.__name__ == "Test2"
