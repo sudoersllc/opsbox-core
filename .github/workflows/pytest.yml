@@ -1,4 +1,4 @@
-name: pytest
+name: Check Code with Pytest
 on:
   pull_request:
     branches:

@@ -1,4 +1,4 @@
-name: ruff
+name: Check Code with Ruff
 on:
   pull_request:
     branches:
