@@ -36,9 +36,14 @@ jobs:
       - name: Run Ruff to format code
         run: ruff format .
 
+      - name: Check for git differences
+        id: git_diff
+        run: |
+          git diff --exit-code || echo "has_changes=true" >> $GITHUB_ENV
+
       - name: Commit and push changes
+        if: env.has_changes == 'true' && !contains(github.event.head_commit.message, 'Format code with Ruff')
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Format code with Ruff"
-        if: "!contains(github.event.head_commit.message, 'Format code with Ruff')"
           
