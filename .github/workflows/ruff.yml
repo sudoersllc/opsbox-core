@@ -1,4 +1,4 @@
-name: Check Code with Ruff
+name: Lint Code with Ruff
 on:
   pull_request:
     branches:
