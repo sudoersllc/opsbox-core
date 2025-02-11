@@ -71,10 +71,12 @@ jobs:
           draft: true
           prerelease: false
 
+
       - name: Upload Each Artifact as Release Asset
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          ls -la
           for file in $(find build-artifacts -type f); do
             echo "Uploading ${file}..."
             gh release upload "${{ github.event.inputs.release_tag }}" "${file}" --clobber
