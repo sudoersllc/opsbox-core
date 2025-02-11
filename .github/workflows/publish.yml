@@ -55,6 +55,9 @@ jobs:
         with:
           name: build-artifacts
           path: build-artifacts
+        
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
       - name: Create GitHub Release
         id: create_release
