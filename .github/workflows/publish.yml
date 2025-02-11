@@ -20,8 +20,6 @@ on:
 
 jobs:
   build_publish:
-    # Only run if the branch name starts with "releases/"
-    if: startsWith(github.ref, 'refs/heads/releases/')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -50,14 +48,14 @@ jobs:
     needs: build_publish
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
         with:
           name: build-artifacts
           path: build-artifacts
-        
-      - name: Checkout Code
-        uses: actions/checkout@v4
 
       - name: Create GitHub Release
         id: create_release
@@ -71,10 +69,12 @@ jobs:
           draft: true
           prerelease: false
 
+
       - name: Upload Each Artifact as Release Asset
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          ls -la
           for file in $(find build-artifacts -type f); do
             echo "Uploading ${file}..."
             gh release upload "${{ github.event.inputs.release_tag }}" "${file}" --clobber
