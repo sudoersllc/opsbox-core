@@ -13,6 +13,10 @@ on:
       release_notes:
         description: "Release notes (optional)"
         required: false
+      skip_publish:
+        description: "Set to 'true' to skip publishing to PyPI and only create a GitHub release."
+        required: false
+        default: "false"
 
 jobs:
   build_publish:
@@ -29,10 +33,12 @@ jobs:
       - name: Build Package with UV
         run: uv build
 
-      - name: Publish Package to PyPI with UV
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-        run: uv publish --token ${{ secrets.PYPI_API_TOKEN }}
+      - name: Publish Package to PyPI
+        if: ${{ github.event.inputs.skip_publish != 'true' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
