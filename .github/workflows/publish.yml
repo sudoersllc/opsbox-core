@@ -1,0 +1,73 @@
+name: Build, Publish, and Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag (e.g., v1.2.3)"
+        required: true
+      release_name:
+        description: "Release name/title"
+        required: true
+        default: "New Release"
+      release_notes:
+        description: "Release notes (optional)"
+        required: false
+
+jobs:
+  build_publish:
+    # Only run if the branch name starts with "releases/"
+    if: startsWith(github.ref, 'refs/heads/releases/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup UV
+        uses: astral-sh/setup-uv@v5
+
+      - name: Build Package with UV
+        run: uv build
+
+      - name: Publish Package to PyPI with UV
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: uv publish --token ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
+  
+  create_release:
+    needs: build_publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: build-artifacts
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event.inputs.release_tag }}
+          release_name: ${{ github.event.inputs.release_name }}
+          body: ${{ github.event.inputs.release_notes }}
+          draft: true
+          prerelease: false
+
+      - name: Upload Each Artifact as Release Asset
+        run: |
+          for file in $(find build-artifacts -type f); do
+            echo "Uploading ${file}..."
+            gh release upload "${{ github.event.inputs.release_tag }}" "${file}" --clobber
+          done
+
+      - name: Clean Up Artifacts
+        run: rm -rf build-artifacts

@@ -51,14 +51,14 @@ build-backend = "setuptools.build_meta"
 
 [project.optional-dependencies]
 aws = [
-    "opsbox-s3-checks>=0.1.4",
-    "opsbox-ec2-checks>=0.1.5",
-    "opsbox-elb-checks>=0.1.6",
-    "opsbox-aws-iam-checks>=0.1.4",
-    "opsbox-r53-checks>=0.1.5",
-    "opsbox-rds-checks>=0.1.6",
-    "opsbox-general-handler>=0.1.2",
-    "opsbox-rego-handler>=0.1.5",
+    "opsbox-s3-checks>=0.2.0",
+    "opsbox-ec2-checks>=0.2.0",
+    "opsbox-elb-checks>=0.2.0",
+    "opsbox-aws-iam-checks>=0.2.0",
+    "opsbox-r53-checks>=0.2.0",
+    "opsbox-rds-checks>=0.2.0",
+    "opsbox-general-handler>=0.2.0",
+    "opsbox-rego-handler>=0.2.1",
 ]
 
 [tool.uv]

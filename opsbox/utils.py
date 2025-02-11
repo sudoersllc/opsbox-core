@@ -1,5 +1,3 @@
-
-
 class SingletonMeta(type):
     """This metaclass is used to create a Singleton class. The Singleton class
     ensures that only one instance of the class is created and that all
@@ -17,5 +15,3 @@ class SingletonMeta(type):
             instance = super().__call__(*args, **kwargs)
             cls._instances[cls] = instance
         return cls._instances[cls]
-    
-
