@@ -2,16 +2,16 @@ import pytest
 
 
 # ruff: noqa: S101
-def test_set_attribute(appconfig):
+def test_set_attribute(app_config):
     """Test setting an attribute."""
-    config = appconfig
+    config = app_config
     config["test"] = "test"
     assert config["test"] == "test"
 
 
-def test_delete_attribute(appconfig):
+def test_delete_attribute(app_config):
     """Test deleting an attribute."""
-    config = appconfig
+    config = app_config
     config["test"] = "test"
     del config["test"]
     # assert keyerror
@@ -19,23 +19,23 @@ def test_delete_attribute(appconfig):
         config["test"]
 
 
-def test_set_attribute_to_none(appconfig):
+def test_set_attribute_to_none(app_config):
     """Test setting an attribute to None."""
-    config = appconfig
+    config = app_config
     config["test"] = None
     assert config["test"] is None
 
 
-def test_delete_non_existent_attribute(appconfig):
+def test_delete_non_existent_attribute(app_config):
     """Test deleting a non-existent attribute."""
-    config = appconfig
+    config = app_config
     with pytest.raises(AttributeError):  # Assuming KeyError is the correct exception
         del config["non_existent"]
 
 
-def test_set_multiple_attributes(appconfig):
+def test_set_multiple_attributes(app_config):
     """Test setting multiple attributes."""
-    config = appconfig
+    config = app_config
     config["attr1"] = "value1"
     config["attr2"] = 123
     config["attr3"] = [1, 2, 3]

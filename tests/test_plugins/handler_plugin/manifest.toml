@@ -5,4 +5,4 @@ class_name = "Test3"
 type = "handler"
 
 [handler]
-handles = ["rego_test"]
+handles = ["rego_test", "input", "output"]

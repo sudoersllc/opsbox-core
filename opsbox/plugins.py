@@ -202,7 +202,7 @@ class Registry(metaclass=SingletonMeta):
                 raise KeyError
             except toml.TOMLDecodeError as e:
                 if log:
-                    logger.warning(f"Error decoding TOML file {path.name}: {e}")
+                    logger.warning(f"Error decoding TOML file {path}: {e}")
                 raise e
 
     @property
@@ -226,6 +226,11 @@ class Registry(metaclass=SingletonMeta):
                 for item in Path(self.plugin_dir).rglob("*.toml"):
                     try:
                         info = self.read_toml_spec(item, log=False)
+                        plugin_class = self._grab_plugin_class(Path(info.toml_path).parent, info)
+                        info.plugin_obj = plugin_class()
+                        with contextlib.suppress(AttributeError):
+                            config: type[BaseModel] = info.plugin_obj.grab_config()
+                            info.config = config
                     except Exception:
                         skipped.append(str(item))
                         continue
@@ -302,12 +307,6 @@ class Registry(metaclass=SingletonMeta):
         # load the plugins that are needed for the pipeline
         logger.trace(f"Collecting information for {len(shallow_needed)} plugins", extra={"collecting_plugins": [item.name for item in shallow_needed]})
         for item in shallow_needed:
-            if item.plugin_obj is None:
-                plugin_class = self._grab_plugin_class(Path(item.toml_path).parent, item)
-                item.plugin_obj = plugin_class()
-                with contextlib.suppress(AttributeError):
-                    config: type[BaseModel] = item.plugin_obj.grab_config()
-                    item.config = config
             if item.type == "handler":
                 self.add_handler(item)
             active.append(item)
@@ -331,12 +330,6 @@ class Registry(metaclass=SingletonMeta):
         # load the plugins that are needed for the other plugins
         logger.trace(f"Collecting information for {len(dependecies)} dependencies", extra={"collecting_dependencies": [item.name for item in dependecies]})
         for item in dependecies:
-            if item.plugin_obj is None:
-                plugin_class = self._grab_plugin_class(Path(item.toml_path).parent, item)
-                item.plugin_obj = plugin_class()
-                with contextlib.suppress(AttributeError):
-                    config: type[BaseModel] = item.plugin_obj.grab_config()
-                    item.config = config
             if item.type == "handler":
                 self.add_handler(item)
             active.append(item)

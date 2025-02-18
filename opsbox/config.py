@@ -119,9 +119,9 @@ class AppConfig(metaclass=SingletonMeta):
             except FileNotFoundError:
                 logger.error(f"Specified config file {config_file} not found.")
                 raise FileNotFoundError(f"Config file {config_file} not found.")
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as e:
                 logger.error(f"Specified config file {config_file} is not valid JSON.")
-                raise json.JSONDecodeError(f"Specified config file {config_file} is not valid JSON.")
+                raise e
 
         return conf if conf != {} else None
 
@@ -294,7 +294,6 @@ class AppConfig(metaclass=SingletonMeta):
         else:
             conf = self.module_settings
             still_needed = self.registry.load_active_plugins(conf)
-
             return still_needed
 
     @logger.catch(reraise=True)
