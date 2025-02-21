@@ -205,7 +205,7 @@ class Registry(metaclass=SingletonMeta):
                 if log:
                     logger.warning(f"Error decoding TOML file {path}: {e}")
                 raise e
-            
+
     @property
     def available_plugins(self) -> list[PluginInfo]:
         """Get the available plugins in the plugin directory.

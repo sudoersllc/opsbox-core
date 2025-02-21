@@ -45,9 +45,7 @@ class TextFileOutput:
         """
         # check if the output folder exists
         if not os.path.exists(self.model.output_folder):
-            os.makedirs(
-                self.model.output_folder
-            )  # create the folder if it doesn't exist
+            os.makedirs(self.model.output_folder)  # create the folder if it doesn't exist
 
     @hookimpl
     def set_data(self, model: BaseModel):
@@ -69,12 +67,8 @@ class TextFileOutput:
             module_out = f"{self.model.output_folder}/{result.relates_to}"
             if not os.path.exists(module_out):
                 os.makedirs(module_out)
-            with open(
-                f"{module_out}/{result.result_name}.txt", "w", encoding="utf-8"
-            ) as f:
-                logger.info(
-                    f"Writing results for {result.result_name} to {module_out}/{result.result_name}.txt"
-                )
+            with open(f"{module_out}/{result.result_name}.txt", "w", encoding="utf-8") as f:
+                logger.info(f"Writing results for {result.result_name} to {module_out}/{result.result_name}.txt")
                 clean_text = textwrap.dedent(result.formatted)
                 f.write(clean_text)
         logger.success("Results written to text files!")

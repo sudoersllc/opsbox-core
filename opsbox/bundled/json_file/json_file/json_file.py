@@ -45,9 +45,7 @@ class JSONFileOutput:
         """
         # check if the output folder exists
         if not os.path.exists(self.model.output_folder):
-            os.makedirs(
-                self.model.output_folder
-            )  # create the folder if it doesn't exist
+            os.makedirs(self.model.output_folder)  # create the folder if it doesn't exist
 
     @hookimpl
     def set_data(self, model: BaseModel):
@@ -76,9 +74,7 @@ class JSONFileOutput:
             # Define the JSON file path
             json_file_path = os.path.join(module_out, f"{result.result_name}.json")
 
-            logger.info(
-                f"Writing results for '{result.result_name}' to '{json_file_path}'"
-            )
+            logger.info(f"Writing results for '{result.result_name}' to '{json_file_path}'")
 
             try:
                 result_data = result.model_dump()
@@ -90,9 +86,7 @@ class JSONFileOutput:
                 logger.debug(f"Successfully wrote JSON for '{result.result_name}'")
 
             except TypeError as e:
-                logger.error(
-                    f"Failed to serialize Result '{result.result_name}' to JSON: {e}"
-                )
+                logger.error(f"Failed to serialize Result '{result.result_name}' to JSON: {e}")
             except IOError as e:
                 logger.error(f"IO error while writing to '{json_file_path}': {e}")
 

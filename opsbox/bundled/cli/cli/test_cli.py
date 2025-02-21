@@ -39,14 +39,10 @@ def test_proccess_results(cli_plugin):
             cli_plugin.proccess_results(results)
 
             mock_rule.assert_any_call("CLI output")
-            mock_print.assert_any_call(
-                "\n[bold green]You have 2 results from the following plugins:[/bold green] [red]['res1', 'res2'][/red]\n"
-            )
+            mock_print.assert_any_call("\n[bold green]You have 2 results from the following plugins:[/bold green] [red]['res1', 'res2'][/red]\n")
 
             for result in results:
-                mock_rule.assert_any_call(
-                    f"[bold cyan]{result.result_name}[/bold cyan]"
-                )
+                mock_rule.assert_any_call(f"[bold cyan]{result.result_name}[/bold cyan]")
                 mock_print.assert_any_call(result.details)
                 mock_rule.assert_any_call()
 
@@ -60,12 +56,8 @@ def test_proccess_results(cli_plugin):
             cli_plugin.proccess_results(results)
 
             mock_rule.assert_any_call("CLI output")
-            mock_print.assert_any_call(
-                "\n[bold green]You have 0 results from the following plugins:[/bold green] [red][][/red]\n"
-            )
+            mock_print.assert_any_call("\n[bold green]You have 0 results from the following plugins:[/bold green] [red][][/red]\n")
             cli_plugin.proccess_results(results)
 
             mock_rule.assert_any_call("CLI output")
-            mock_print.assert_any_call(
-                "\n[bold green]You have 0 results from the following plugins:[/bold green] [red][][/red]\n"
-            )
+            mock_print.assert_any_call("\n[bold green]You have 0 results from the following plugins:[/bold green] [red][][/red]\n")
