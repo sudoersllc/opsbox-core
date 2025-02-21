@@ -1,0 +1,14 @@
+LICENCE.txt
+MANIFEST.in
+README.md
+pyproject.toml
+./json_file/manifest.toml
+json_file/json_file.py
+json_file/manifest.toml
+json_file/test_json_file.py
+opsbox_json_file_output.egg-info/PKG-INFO
+opsbox_json_file_output.egg-info/SOURCES.txt
+opsbox_json_file_output.egg-info/dependency_links.txt
+opsbox_json_file_output.egg-info/entry_points.txt
+opsbox_json_file_output.egg-info/requires.txt
+opsbox_json_file_output.egg-info/top_level.txt

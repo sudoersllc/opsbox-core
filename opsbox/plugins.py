@@ -139,8 +139,9 @@ class Registry(metaclass=SingletonMeta):
     _active = []
     _available = []
 
-    def __init__(self, flow: PluginFlow, plugin_dir: str | None = None):
+    def __init__(self, flow: PluginFlow, plugin_dir: str | None = None, load_bundled: bool = True):
         self.flow = flow
+        self.load_bundled = load_bundled
         self.manager = pluggy.PluginManager(self.project_name)
         if plugin_dir is not None:
             logger.debug(f"Using plugins from directory {plugin_dir}")
@@ -202,7 +203,7 @@ class Registry(metaclass=SingletonMeta):
                 raise KeyError
             except toml.TOMLDecodeError as e:
                 if log:
-                    logger.warning(f"Error decoding TOML file {path.name}: {e}")
+                    logger.warning(f"Error decoding TOML file {path}: {e}")
                 raise e
 
     @property
@@ -219,13 +220,17 @@ class Registry(metaclass=SingletonMeta):
         else:
             logger.debug("No cached available plugins, computing available plugins from the environment")
 
-            if self.plugin_dir is not None:
-                # load the plugins from the plugin directory if specified
-                logger.debug(f"Finding plugins available in directory {self.plugin_dir}")
+            def _grab_plugins_from_dir(plugin_dir: Path) -> list[PluginInfo]:
+                logger.debug(f"Finding plugins available in directory {plugin_dir}")
                 skipped: list[str] = []  # store skipped plugins
-                for item in Path(self.plugin_dir).rglob("*.toml"):
+                for item in Path(plugin_dir).rglob("*.toml"):
                     try:
                         info = self.read_toml_spec(item, log=False)
+                        plugin_class = self._grab_plugin_class(Path(info.toml_path).parent, info)
+                        info.plugin_obj = plugin_class()
+                        with contextlib.suppress(AttributeError):
+                            config: type[BaseModel] = info.plugin_obj.grab_config()
+                            info.config = config
                     except Exception:
                         skipped.append(str(item))
                         continue
@@ -233,6 +238,15 @@ class Registry(metaclass=SingletonMeta):
                         available.append(info)
                 if len(skipped) > 0:
                     logger.trace(f"Skipped {len(skipped)} invalid TOML manifests.", extra={"skipped_paths": skipped})
+
+            if self.load_bundled:
+                file_dir = Path(__file__).parent.joinpath("bundled")
+                _grab_plugins_from_dir(file_dir)
+
+            # load unbundled plugins
+            if self.plugin_dir is not None:
+                # load the plugins from the plugin directory if specified
+                _grab_plugins_from_dir(Path(self.plugin_dir))
             else:
                 # load the plugins from the entrypoints if not specified
                 logger.debug("No plugin directory specified. Finding plugins availble from entrypoints in venv.")
@@ -302,12 +316,6 @@ class Registry(metaclass=SingletonMeta):
         # load the plugins that are needed for the pipeline
         logger.trace(f"Collecting information for {len(shallow_needed)} plugins", extra={"collecting_plugins": [item.name for item in shallow_needed]})
         for item in shallow_needed:
-            if item.plugin_obj is None:
-                plugin_class = self._grab_plugin_class(Path(item.toml_path).parent, item)
-                item.plugin_obj = plugin_class()
-                with contextlib.suppress(AttributeError):
-                    config: type[BaseModel] = item.plugin_obj.grab_config()
-                    item.config = config
             if item.type == "handler":
                 self.add_handler(item)
             active.append(item)
@@ -331,12 +339,6 @@ class Registry(metaclass=SingletonMeta):
         # load the plugins that are needed for the other plugins
         logger.trace(f"Collecting information for {len(dependecies)} dependencies", extra={"collecting_dependencies": [item.name for item in dependecies]})
         for item in dependecies:
-            if item.plugin_obj is None:
-                plugin_class = self._grab_plugin_class(Path(item.toml_path).parent, item)
-                item.plugin_obj = plugin_class()
-                with contextlib.suppress(AttributeError):
-                    config: type[BaseModel] = item.plugin_obj.grab_config()
-                    item.config = config
             if item.type == "handler":
                 self.add_handler(item)
             active.append(item)

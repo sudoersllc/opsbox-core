@@ -19,3 +19,4 @@ venv
 log.json
 config.json
 opsbox.egg-info/*
+uv.lock
