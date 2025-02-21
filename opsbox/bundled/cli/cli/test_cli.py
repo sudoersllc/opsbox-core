@@ -3,6 +3,8 @@ from unittest.mock import patch
 from opsbox import Result
 from .cli.cli import CLIOutput  # type: ignore
 
+# ruff: noqa: S101, D103
+
 
 @pytest.fixture
 def cli_plugin():

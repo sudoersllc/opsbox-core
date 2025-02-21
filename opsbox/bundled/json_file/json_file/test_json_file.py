@@ -10,6 +10,8 @@ import logging
 
 from loguru import logger
 
+# ruff: noqa: S101, D103
+
 
 @pytest.fixture
 def loguru_caplog(caplog):
