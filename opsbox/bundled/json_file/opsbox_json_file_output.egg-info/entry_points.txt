@@ -1,0 +1,2 @@
+[opsbox.plugins]
+json_file_output = json_file.json_file:JSONFileOutput

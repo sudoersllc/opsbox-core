@@ -1,0 +1,2 @@
+[opsbox.plugins]
+opsbox_cli = cli.cli:CLIOutput
