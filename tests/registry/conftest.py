@@ -12,7 +12,7 @@ def test_registry():
     """Fixture for the registry with a dummy pipeline."""
     Registry._instances = {}
     pipeline = PluginFlow(input_plugins=["test_plugin_1", "test_plugin_2"], output_plugins=["test_plugin_4"])
-    yield Registry(flow=pipeline, plugin_dir="tests/test_plugins")
+    yield Registry(flow=pipeline, plugin_dir="tests/test_plugins", load_bundled=False)
     Registry._instances = {}
 
 
@@ -80,4 +80,4 @@ def registry_no_plugindir(mocker: MockerFixture, test_registry: Registry):
     # create a new registry
     logger.info("Creating a new registry")
     pipeline = PluginFlow(input_plugins=["test_plugin_1", "test_plugin_2"], output_plugins=["test_plugin_4"])
-    return Registry(flow=pipeline)
+    return Registry(flow=pipeline, load_bundled=False)

@@ -12,7 +12,7 @@ def test_registry_bad():
     """Fixture for the registry with a dummy pipeline."""
     Registry._instances = {}
     pipeline = PluginFlow(input_plugins=["test_plugin_123", "test_plugin_234"], output_plugins=["test_plugin_456"])
-    return Registry(flow=pipeline, plugin_dir="tests/test_plugins")
+    return Registry(flow=pipeline, plugin_dir="tests/test_plugins",  load_bundled=False)
 
 
 def test_available_plugins(test_registry: Registry):

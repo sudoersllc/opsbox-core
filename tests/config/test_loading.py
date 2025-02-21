@@ -33,7 +33,7 @@ def test_load_missing_modules(app_config):
 def test_grab_env_plugins(app_config):
     """Test grabbing plugins from environment variables."""
     results = app_config.grab_conf_environment_plugins()
-    assert len(results) == 5
+    assert len(results) == 8
 
 
 @patch("os.sys.argv", ["script_name", "--modules", "test_plugin_1-test_plugin_4", "--plugin_dir", "tests/test_plugins", "--test1", "test_value", "--test2", "test_value", "--test3", "test_value"])
