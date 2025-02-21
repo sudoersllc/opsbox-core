@@ -1,0 +1,10 @@
+Metadata-Version: 2.2
+Name: opsbox-text-file-output
+Version: 0.1.2
+Summary: Add your description here
+Requires-Python: ==3.11.*
+Description-Content-Type: text/markdown
+License-File: LICENCE.txt
+Requires-Dist: loguru>=0.7.2
+Requires-Dist: pluggy>=1.5.0
+Requires-Dist: opsbox-general-handler>=0.1.2

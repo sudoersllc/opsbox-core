@@ -1,0 +1,2 @@
+[opsbox.plugins]
+text_file_output = text_file.text_file:TextFileOutput
