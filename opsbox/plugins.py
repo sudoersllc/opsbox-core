@@ -180,7 +180,6 @@ class Registry(metaclass=SingletonMeta):
         with open(path, "rb") as toml_file:
             try:
                 plugin_config = toml.load(toml_file)
-
                 # seperate basic plugin info from other info
                 plugin_info = plugin_config["info"]
                 plugin_info["toml_path"] = str(path)
@@ -301,21 +300,25 @@ class Registry(metaclass=SingletonMeta):
         logger.trace(f"Starting first-pass plugin resolution for pipeline: {rebuilt_pipeline_str}")
 
         # get the plugins that are specifically requested for the pipeline
-        shallow_needed: list[PluginInfo] = []
+        requested_plugins: list[PluginInfo] = []
         for item in [item for item in self.available_plugins if item.name in pipeline_modules]:
-            if item not in shallow_needed:
-                shallow_needed.append(item)
+            if item.name not in [item.name for item in requested_plugins]:
+                requested_plugins.append(item)
+            else:
+                logger.warning(f"Duplicate plugin {item.name} found in pipeline, skipping")
 
         # check if we have all the needed plugins
-        if len(pipeline_modules) != len(shallow_needed):
-            names: list[str] = [item.name for item in shallow_needed]
+        if len(pipeline_modules) > len(requested_plugins):
+            names: list[str] = [item.name for item in requested_plugins]
             still_needed = [item for item in pipeline_modules if item not in names]
             logger.critical(f"Could not find the plugins you specified in the pipeline: {still_needed}")
             raise PluginNotFoundError(still_needed)
+        elif len(pipeline_modules) != len(requested_plugins):
+            logger.critical("Found all the plugins and then some! Something fishy is going on here, it's not safe to continue...")
 
         # load the plugins that are needed for the pipeline
-        logger.trace(f"Collecting information for {len(shallow_needed)} plugins", extra={"collecting_plugins": [item.name for item in shallow_needed]})
-        for item in shallow_needed:
+        logger.trace(f"Collecting information for {len(requested_plugins)} plugins", extra={"collecting_plugins": [item.name for item in requested_plugins]})
+        for item in requested_plugins:
             if item.type == "handler":
                 self.add_handler(item)
             active.append(item)
