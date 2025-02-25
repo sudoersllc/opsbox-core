@@ -295,8 +295,6 @@ class Registry(metaclass=SingletonMeta):
         uses: list[str] = []
 
         pipeline_modules = set(self.flow.all_visible_modules)
-        print("Pipeline modules:")
-        print(pipeline_modules)
 
         rebuilt_pipeline_str = ", ".join(self.flow.input_plugins) + ("-" + "-".join(self.flow.assistant_plugins) if self.flow.assistant_plugins else "") + "-" + "-".join(self.flow.output_plugins)
         logger.trace(f"Starting first-pass plugin resolution for pipeline: {rebuilt_pipeline_str}")
@@ -310,11 +308,13 @@ class Registry(metaclass=SingletonMeta):
                 logger.warning(f"Duplicate plugin {item.name} found in pipeline, skipping")
 
         # check if we have all the needed plugins
-        if len(pipeline_modules) != len(requested_plugins):
+        if len(pipeline_modules) > len(requested_plugins):
             names: list[str] = [item.name for item in requested_plugins]
             still_needed = [item for item in pipeline_modules if item not in names]
             logger.critical(f"Could not find the plugins you specified in the pipeline: {still_needed}")
             raise PluginNotFoundError(still_needed)
+        elif len(pipeline_modules) != len(requested_plugins):
+            logger.critical("Found all the plugins and then some! Something fishy is going on here, it's not safe to continue...")
 
         # load the plugins that are needed for the pipeline
         logger.trace(f"Collecting information for {len(requested_plugins)} plugins", extra={"collecting_plugins": [item.name for item in requested_plugins]})
