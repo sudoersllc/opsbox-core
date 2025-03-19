@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch
 from opsbox import Result
-from .cli.cli import CLIOutput  # type: ignore
+from .cli import CLIOutput  # type: ignore
 
 # ruff: noqa: S101, D103
 
