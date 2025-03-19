@@ -5,7 +5,7 @@ import shutil
 from unittest.mock import patch
 from pydantic import BaseModel
 from opsbox import Result
-from .json_file.json_file import JSONFileOutput  # type: ignore
+from .json_file import JSONFileOutput  # type: ignore
 import logging
 
 from loguru import logger
