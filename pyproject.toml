@@ -1,6 +1,6 @@
 [project]
 name = "opsbox"
-version = "0.2.3"
+version = "0.2.4"
 description = "AI-powered infrastructure management"
 readme = "README.md"
 requires-python = "==3.11.*"
@@ -19,6 +19,7 @@ dependencies = [
     "importlib-resources>=6.4.5",
     "llama-index-llms-anthropic>=0.6.3",
     "dateparser>=1.2.0",
+    "markdown>=3.7",
 ]
 license = {file = "LICENCE.txt"}
 classifiers = [

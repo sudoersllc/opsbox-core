@@ -4,7 +4,7 @@ import tempfile
 import shutil
 from pydantic import BaseModel
 from opsbox import Result
-from .text_file.text_file import TextFileOutput  # type: ignore
+from .text_file import TextFileOutput  # type: ignore
 import logging
 from loguru import logger
 
