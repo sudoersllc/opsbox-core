@@ -14,6 +14,7 @@ import contextlib
 from pydantic import ValidationError
 from typing import Type
 import importlib_resources as resources
+import runpy
 from inspect import getmodule
 
 hookspec = pluggy.HookspecMarker("opsbox")
@@ -332,7 +333,7 @@ class Registry(metaclass=SingletonMeta):
         for item in [item for item in self.available_plugins if item.name in uses]:
             if item not in dependecies:
                 dependecies.append(item)
-
+                
         # check if we have all the dependencies
         if len(uses) != len(dependecies):
             names = [item.name for item in dependecies]
@@ -359,22 +360,24 @@ class Registry(metaclass=SingletonMeta):
 
     # @logger.catch(reraise=True)
     def _grab_plugin_class(self, path: Path, plugin_info: PluginInfo) -> Any:
-        """Load the class from the plugin module.
-
-        Args:
-            path (Path): Path to the plugin file.
-            plugin_info (PluginInfo): Configuration of the plugin.
-
-        Returns:
-            Any: Loaded class from the plugin module.
-        """
         module_name, class_name = plugin_info.module, plugin_info.class_name
-        logger.trace(f"Grabbing plugin class {class_name} from {module_name} at {path}")
-        spec = importlib.util.spec_from_file_location(module_name, os.path.join(str(path), f"{module_name}.py"))
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[module_name] = module
-        spec.loader.exec_module(module)
-        return getattr(module, class_name)
+        filename = module_name.split(".")[-1] + ".py"  # Just get the filename
+        plugin_file = path / filename
+
+        logger.trace(f"Grabbing plugin class {class_name} from {plugin_file}")
+
+        try:
+            if not plugin_file.exists():
+                raise FileNotFoundError(f"Plugin file not found: {plugin_file}")
+            module_globals = runpy.run_path(str(plugin_file))
+            return module_globals[class_name]
+        except Exception as e:
+            import traceback
+            logger.debug(
+                f"Failed to grab plugin class {class_name} from {module_name}.",
+                extra={"Exception": str(e), "Traceback": traceback.format_exc()},
+            )
+            raise
 
     # @logger.catch(reraise=True)
     def load_active_plugins(self, config: dict) -> list[tuple[str, str, Any]] | None:
