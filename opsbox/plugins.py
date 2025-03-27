@@ -335,7 +335,8 @@ class Registry(metaclass=SingletonMeta):
 
         # check if we have all the dependencies
         if len(uses) != len(dependecies):
-            still_needed = [item for item in uses if item not in dependecies]
+            names = [item.name for item in dependecies]
+            still_needed = [item for item in uses if item not in names]
             logger.critical(f"Could not find needed plugin dependencies: {still_needed}")
             raise PluginNotFoundError(still_needed)
 
