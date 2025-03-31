@@ -333,7 +333,7 @@ class Registry(metaclass=SingletonMeta):
         for item in [item for item in self.available_plugins if item.name in uses]:
             if item not in dependecies:
                 dependecies.append(item)
-                
+
         # check if we have all the dependencies
         if len(uses) != len(dependecies):
             names = [item.name for item in dependecies]
@@ -373,6 +373,7 @@ class Registry(metaclass=SingletonMeta):
             return module_globals[class_name]
         except Exception as e:
             import traceback
+
             logger.debug(
                 f"Failed to grab plugin class {class_name} from {module_name}.",
                 extra={"Exception": str(e), "Traceback": traceback.format_exc()},
