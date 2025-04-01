@@ -223,10 +223,12 @@ class Registry(metaclass=SingletonMeta):
             try:
                 # grab entry point referenced obj and load it
                 plugin_class = entry_point.load()
+                module = importlib.import_module(plugin_class.__module__)
+                file = Path(module.__file__)
                 plugin_obj = plugin_class()
 
                 # get manifest info and config
-                manifest_path = Path(plugin_class.__file__).parent / "manifest.toml"
+                manifest_path = file.parent / "manifest.toml"
                 info = self._parse_manifest(manifest_path)
                 info.plugin_obj = plugin_obj
 
