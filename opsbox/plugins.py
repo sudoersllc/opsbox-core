@@ -1,7 +1,7 @@
 import importlib.metadata
+import types
 import pluggy
 import importlib.util
-import os
 import sys
 import tomllib as toml
 from pydantic import BaseModel
@@ -13,8 +13,7 @@ from pathlib import Path
 import contextlib
 from pydantic import ValidationError
 from typing import Type
-import importlib_resources as resources
-from inspect import getmodule
+import runpy
 
 hookspec = pluggy.HookspecMarker("opsbox")
 
@@ -149,8 +148,6 @@ class Registry(metaclass=SingletonMeta):
         else:
             logger.debug("Using plugins from entrypoints in .venv")
             self.plugin_dir = None
-            plugin_num = self.manager.load_setuptools_entrypoints(f"{self.project_name}.plugins")
-            logger.debug(f"Found {plugin_num} plugins")
         add_hookspecs(self.manager)
 
     def add_handler(self, plugin: PluginInfo) -> None:
@@ -167,42 +164,134 @@ class Registry(metaclass=SingletonMeta):
                 with contextlib.suppress(ValueError, AttributeError):
                     plugin.plugin_obj.add_hookspecs(self.manager)
 
-    def read_toml_spec(self, path: Path, log: bool = True) -> PluginInfo:
-        """Read the TOML file and validate the plugin spec.
+    def _available_in_dir(self, plugin_dir: str | Path) -> list[PluginInfo]:
+        """Get the plugins from the specified directory.
 
         Args:
-            path (Path): The path to the TOML file.
-            log (bool): Whether to log errors or not.
+            plugin_dir (str): The directory to load the plugins from.
+
+        Returns:
+            list[PluginInfo]: List of plugins in the directory."""
+
+        plugin_dir = Path(plugin_dir) if type(plugin_dir) is str else plugin_dir
+
+        if not plugin_dir.exists():
+            logger.warning(f"Plugin directory {plugin_dir} does not exist!")
+            return []
+
+        if not plugin_dir.is_dir():
+            logger.warning(f"Plugin directory {plugin_dir} is not a directory!")
+            return []
+
+        excluded = ["pyproject.toml"]
+        files_to_investigate = [item for item in plugin_dir.rglob("*.toml") if item.name not in excluded]
+
+        logger.debug(f"Found {len(files_to_investigate)} files to investigate in {plugin_dir}", extra={"files": [str(item) for item in files_to_investigate]})
+
+        skipped: list[str] = []  # store skipped plugins
+        available: list[PluginInfo] = []
+
+        for potential_manifest in files_to_investigate:
+            try:
+                info = self._parse_manifest(potential_manifest)
+                plugin_class = self._grab_plugin_class(Path(info.toml_path).parent, info)
+                info.plugin_obj = plugin_class()
+                with contextlib.suppress(AttributeError):
+                    config: type[BaseModel] = info.plugin_obj.grab_config()
+                    info.config = config
+                available.append(info)
+            except Exception as e:
+                skipped.append({str(potential_manifest): e})
+
+        if len(skipped) > 0:
+            logger.trace(f"Skipped {len(skipped)} invalid TOML manifests.", extra={"skipped_paths": skipped})
+        logger.debug(f"Found {len(available)} available plugins in {plugin_dir}", extra={"available": [item.name for item in available]})
+        return available
+
+    def _available_in_entrypoints(self) -> list[PluginInfo]:
+        """Get the plugins from the entrypoints.
+
+        Returns:
+            list[PluginInfo]: List of plugins in the entrypoints."""
+
+        entry_points = importlib.metadata.entry_points(group=f"{self.project_name}.plugins")
+        available: list[PluginInfo] = []
+
+        logger.trace(f"Found {len(entry_points)} entry points in the environment", extra={"entry_points": [str(item) for item in entry_points]})
+
+        for entry_point in entry_points:
+            try:
+                # grab entry point referenced obj and load it
+                plugin_class = entry_point.load()
+                module = importlib.import_module(plugin_class.__module__)
+                file = Path(module.__file__)
+                plugin_obj = plugin_class()
+
+                # get manifest info and config
+                manifest_path = file.parent / "manifest.toml"
+                info = self._parse_manifest(manifest_path)
+                info.plugin_obj = plugin_obj
+
+                with contextlib.suppress(AttributeError):
+                    config: type[BaseModel] = plugin_obj.grab_config()
+                    info.config = config
+
+                available.append(info)  # add to available plugins
+            except Exception as e:
+                logger.warning(f"Error loading plugin at entry point {entry_point.name}: {e}")
+
+        logger.trace(f"Found {len(available)} available plugins in entry points", extra={"available": [item.name for item in available]})
+        return available
+
+    def _parse_manifest(self, manifest_path: Path) -> PluginInfo:
+        """Parse the manifest file and return the plugin information.
+
+        Args:
+            path (Path): The path to the manifest file.
 
         Returns:
             PluginInfo: The plugin information.
-        """
-        with open(path, "rb") as toml_file:
-            try:
-                plugin_config = toml.load(toml_file)
-                # seperate basic plugin info from other info
-                plugin_info = plugin_config["info"]
-                plugin_info["toml_path"] = str(path)
-                plugin_extra = {k: v for k, v in plugin_config.items() if k != "info"}
-                plugin_extra = {"extra": plugin_extra}
 
-                concat_info = {**plugin_info, **plugin_extra}
+        Raises:
+            ValidationError: If the manifest file is invalid.
+            FileNotFoundError: If the manifest file does not exist.
+            KeyError: If the manifest file is missing required fields.
+            toml.TOMLDecodeError: If the manifest file is not a valid TOML file.
+        """
+        if not isinstance(manifest_path, Path):
+            manifest_path = Path(manifest_path)
+
+        if not manifest_path.exists():
+            logger.warning(f"Manifest file {manifest_path} does not exist!")
+            return None
+
+        if not manifest_path.is_file():
+            logger.warning(f"Manifest file {manifest_path} is not a file!")
+            return None
+
+        with open(manifest_path, "rb") as toml_file:
+            try:
+                manifest = toml.load(toml_file)
+
+                # fill in the empty info
+                base_dict = {key: value for key, value in manifest["info"].items()}
+                base_dict["toml_path"] = str(manifest_path)
+                extra_dict = {key: value for key, value in manifest.items() if key != "info"}
+                extra_dict = {"extra": extra_dict}
+
+                concat_info = {**base_dict, **extra_dict}
 
                 # validate with pydantic
-                if log:
-                    logger.debug(f"Validated plugin {path}")
-                return PluginInfo(**concat_info)
+                info = PluginInfo(**concat_info)
+                return info
             except ValidationError as e:
-                if log:
-                    logger.warning(f"Error validating plugin {path}: {e.errors()}")
+                logger.trace(f"Error validating plugin {manifest_path}: {e.errors()}")
                 raise e
-            except KeyError:
-                if log:
-                    logger.warning(f"Invalid plugin info at {path}")
-                raise KeyError
+            except KeyError as e:
+                logger.trace(f"Invalid plugin info at {manifest_path}")
+                raise e
             except toml.TOMLDecodeError as e:
-                if log:
-                    logger.warning(f"Error decoding TOML file {path}: {e}")
+                logger.trace(f"Error decoding TOML file {manifest_path}: {e}")
                 raise e
 
     @property
@@ -212,71 +301,31 @@ class Registry(metaclass=SingletonMeta):
 
         Returns:
             list[PluginInfo]: List of available plugins."""
-        available: list[PluginInfo] = []
+
+        # check and return cache
         if len(self._available) > 0:
             logger.debug("Returning cached available plugins")
             return self._available
+
+        logger.debug("No cached available plugins, computing available plugins from the environment")
+
+        available: list[PluginInfo] = []
+
+        # load bundled plugins
+        if self.load_bundled:
+            logger.debug("Loading bundled plugins")
+            plugin_dir = __file__
+            plugin_dir = Path(plugin_dir).parent / "bundled"
+            available.extend(self._available_in_dir(plugin_dir))
+
+        # load unbundled plugins
+        if self.plugin_dir is not None:
+            available.extend(self._available_in_dir(self.plugin_dir))
         else:
-            logger.debug("No cached available plugins, computing available plugins from the environment")
+            available.extend(self._available_in_entrypoints())
 
-            def _grab_plugins_from_dir(plugin_dir: Path) -> list[PluginInfo]:
-                logger.debug(f"Finding plugins available in directory {plugin_dir}")
-                skipped: list[str] = []  # store skipped plugins
-                for item in Path(plugin_dir).rglob("*.toml"):
-                    try:
-                        info = self.read_toml_spec(item, log=False)
-                        plugin_class = self._grab_plugin_class(Path(info.toml_path).parent, info)
-                        info.plugin_obj = plugin_class()
-                        with contextlib.suppress(AttributeError):
-                            config: type[BaseModel] = info.plugin_obj.grab_config()
-                            info.config = config
-                    except Exception:
-                        skipped.append(str(item))
-                        continue
-                    if info is not None:
-                        available.append(info)
-                if len(skipped) > 0:
-                    logger.trace(f"Skipped {len(skipped)} invalid TOML manifests.", extra={"skipped_paths": skipped})
-
-            if self.load_bundled:
-                file_dir = Path(__file__).parent.joinpath("bundled")
-                _grab_plugins_from_dir(file_dir)
-
-            # load unbundled plugins
-            if self.plugin_dir is not None:
-                # load the plugins from the plugin directory if specified
-                _grab_plugins_from_dir(Path(self.plugin_dir))
-            else:
-                # load the plugins from the entrypoints if not specified
-                logger.debug("No plugin directory specified. Finding plugins availble from entrypoints in venv.")
-                for entry_point in importlib.metadata.entry_points(group=f"{self.project_name}.plugins"):
-                    try:
-                        plugin_class = entry_point.load()
-                        plugin_obj = plugin_class()
-                        config = None
-                        with contextlib.suppress(AttributeError):
-                            config: type[BaseModel] = plugin_obj.grab_config()
-
-                        plugin_module = getmodule(plugin_class)
-                        with resources.files(plugin_module).joinpath("manifest.toml") as path, open(path, "rb") as toml_file:
-                            plugin_config = toml.load(toml_file)
-                            plugin_raw_info = plugin_config["info"]
-                            plugin_raw_info["toml_path"] = path
-                            plugin_raw_info["extra"] = {k: v for k, v in plugin_config.items() if k != "info"}
-                            plugin_raw_info["config"] = config
-                            plugin_raw_info["plugin_obj"] = plugin_obj
-                            plugin_raw_info["class_name"] = plugin_class.__name__
-                            plugin_raw_info["module"] = plugin_class.__module__
-
-                            info = PluginInfo(**plugin_raw_info)
-                        available.append(info)
-                    except Exception as e:
-                        logger.warning(f"Error loading plugin at entry point {entry_point.name}: {e}")
-                        continue
-            available_names = [item.name for item in available]
-            self._available = available
-            logger.debug(f"Found {len(available)} available plugins in {(self.plugin_dir if self.plugin_dir is not None else 'entrypoints')}", extra={"available": available_names})
-            return available
+        self._available = available
+        return available
 
     @property
     def active_plugins(self) -> list[PluginInfo]:
@@ -284,7 +333,7 @@ class Registry(metaclass=SingletonMeta):
 
         Returns:
             list[PluginInfo]: List of active plugins."""
-        if len(self._active) != 0:
+        if len(self._active) > 0:
             logger.debug("Returning cached active plugins")
             return self._active
 
@@ -335,7 +384,8 @@ class Registry(metaclass=SingletonMeta):
 
         # check if we have all the dependencies
         if len(uses) != len(dependecies):
-            still_needed = [item for item in uses if item not in dependecies]
+            names = [item.name for item in dependecies]
+            still_needed = [item for item in uses if item not in names]
             logger.critical(f"Could not find needed plugin dependencies: {still_needed}")
             raise PluginNotFoundError(still_needed)
 
@@ -358,22 +408,64 @@ class Registry(metaclass=SingletonMeta):
 
     # @logger.catch(reraise=True)
     def _grab_plugin_class(self, path: Path, plugin_info: PluginInfo) -> Any:
-        """Load the class from the plugin module.
+        """Grab the plugin class from the specified path.
+        This is used to load the plugin class from the specified path.
 
         Args:
-            path (Path): Path to the plugin file.
-            plugin_info (PluginInfo): Configuration of the plugin.
+            path (Path): The path to the plugin directory.
+            plugin_info (PluginInfo): The plugin information.
 
         Returns:
-            Any: Loaded class from the plugin module.
+            Any: The plugin class.
+
+        Raises:
+            FileNotFoundError: If the plugin file does not exist.
+            AttributeError: If the class is not found in the module.
         """
         module_name, class_name = plugin_info.module, plugin_info.class_name
-        logger.trace(f"Grabbing plugin class {class_name} from {module_name} at {path}")
-        spec = importlib.util.spec_from_file_location(module_name, os.path.join(str(path), f"{module_name}.py"))
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[module_name] = module
-        spec.loader.exec_module(module)
-        return getattr(module, class_name)
+        filename = module_name.split(".")[-1] + ".py"  # Just get the filename
+        plugin_file = path / filename
+
+        logger.trace(f"Grabbing plugin class {class_name} from {plugin_file}")
+
+        try:
+            if not plugin_file.exists():
+                raise FileNotFoundError(f"Plugin file not found: {plugin_file}")
+
+            # load with runpy
+            module_globals = runpy.run_path(str(plugin_file))
+
+            # set up as module
+            mod = types.ModuleType(module_name) if module_name not in sys.modules else sys.modules[module_name]
+            mod.__dict__.update(module_globals)
+            mod.__name__ = module_name
+            mod.__package__ = module_name
+            mod.__file__ = str(plugin_file)
+            mod.__module__ = module_name
+
+            sys.modules[module_name] = mod
+
+            # import the module and get the class
+            module = importlib.import_module(module_name)
+
+            cls = getattr(module, class_name)
+
+            cls.__module__ = module_name
+            cls.__file__ = str(plugin_file)
+            cls.__name__ = class_name
+
+            if cls is None:
+                raise AttributeError(f"Class '{class_name}' not found in module '{module_name}'")
+
+            return cls
+        except Exception as e:
+            import traceback
+
+            logger.debug(
+                f"Failed to grab plugin class {class_name} from {module_name}: {e}",
+                extra={"Exception": str(e), "Traceback": traceback.format_exc()},
+            )
+            raise e
 
     # @logger.catch(reraise=True)
     def load_active_plugins(self, config: dict) -> list[tuple[str, str, Any]] | None:
