@@ -10,7 +10,7 @@ from tomllib import TOMLDecodeError
 def test_toml_load_success(test_registry: Registry):
     """Test the loading of a TOML file."""
     registry = test_registry
-    item = registry.read_toml_spec("tests/test_plugins/rego_plugin/manifest.toml")
+    item = registry._parse_manifest("tests/test_plugins/rego_plugin/manifest.toml")
 
     assert item.name == "test_plugin_2"
     assert item.module == "test_2"
@@ -28,11 +28,11 @@ def test_toml_spec_validation_err(test_registry: Registry):
     """Test the loading of a TOML file."""
     registry = test_registry
     with pytest.raises((ValidationError, KeyError)):
-        registry.read_toml_spec("tests/invalid_test_plugins/invalid_key/manifest.toml")
+        registry._parse_manifest("tests/invalid_test_plugins/invalid_key/manifest.toml")
 
 
 def test_toml_spec_decode_err(test_registry: Registry):
     """Test the loading of a TOML file."""
     registry = test_registry
     with pytest.raises(TOMLDecodeError):
-        registry.read_toml_spec("tests/invalid_test_plugins/invalid_toml/manifest.toml")
+        registry._parse_manifest("tests/invalid_test_plugins/invalid_toml/manifest.toml")
