@@ -4,6 +4,7 @@ from rich.table import Table
 from rich.text import Text
 from pydantic.fields import FieldInfo
 from opsbox.config import ApplicationSettings
+from opsbox.plugins import PluginInfo
 
 console = Console()
 
@@ -106,7 +107,7 @@ def print_missing_arguments_error(modules: list[str], arguments: list[tuple[str,
     print_config_help()
 
 
-def print_available_plugins(plugins: list[tuple[str, str]], excluded: list[str] | None = ["handler", "provider"], plugin_dir: str = None):
+def print_available_plugins(plugins: list[PluginInfo], excluded: list[str] | None = ["handler", "provider"], plugin_dir: str = None):
     """Print a list of available plugins.
 
     Args:
@@ -115,10 +116,11 @@ def print_available_plugins(plugins: list[tuple[str, str]], excluded: list[str] 
         plugin_dir (str, optional): The plugin directory that was searched. Defaults to None.
     """
     # Sort the plugins by type
+
     if excluded is None:
         excluded = []
-    plugins = [plugins for plugins in plugins if plugins[1] not in excluded]
-    plugins.sort(key=lambda x: x[1])
+    plugins = [plugin for plugin in plugins if plugin.type not in excluded]
+    plugins.sort(key=lambda x: x.type)
     plugins.reverse()
 
     console.rule("[bold red]Environment Plugins[/bold red]")
@@ -141,8 +143,9 @@ Try installing some opsbox packages into your virtual environment or specifying 
         table.add_column("Plugin Name", justify="left", style="cyan")
         table.add_column("Type", justify="left", style="green")
 
-        for plugin_name, plugin_type in plugins:
-            table.add_row(plugin_name, plugin_type)
+
+        for item in plugins:
+            table.add_row(item.name, item.type)
 
         table = Align.left(table, vertical="middle")
         console.print(table)

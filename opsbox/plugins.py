@@ -1,4 +1,6 @@
 import importlib.metadata
+import json
+import os
 import types
 import pluggy
 import importlib.util
@@ -79,46 +81,118 @@ class PluginInfo(BaseModel):
     extra: dict[str, Any] | None = None
 
 
-class PluginFlow(BaseModel):
-    """Basic flow model for the plugins.
+class Pipeline():
+    """A dictionary representing the pipeline.
 
     Attributes:
-        input_plugins (list[str]): List of input plugins.
-        assistant_plugins (list[str]): List of assistant plugins.
-        output_plugins (list[str]): List of output plugins.
+        input_plugins (list[PluginInfo]): The input plugins in the pipeline.
+        assistant_plugins (list[PluginInfo]): The assistant plugins in the pipeline.
+        output_plugins (list[PluginInfo]): The output plugins in the pipeline.
+        raw_pipeline (str): The raw pipeline string.
     """
 
-    input_plugins: list[str] = []
-    assistant_plugins: list[str] = []
-    output_plugins: list[str] = []
+    input_plugins: list[PluginInfo] = []
+    assistant_plugins: list[PluginInfo] = []
+    output_plugins: list[PluginInfo] = []
 
-    def set_flow(self, pipeline: str) -> "PluginFlow":
-        """Processes the pipeline for the application.
-        This method is used to process the pipeline from strings.
+    def __init__(self, raw_pipeline: str | None = None, inputs: list[str] = None, assistants: list[str] = None, outputs: list[str] = None):
+        """Make a pipeline from a string.
 
         Args:
-            pipeline (str): The pipeline to process.
+            raw_pipeline (str): The pipeline to process.
         """
+        # split pipeline
+        if raw_pipeline is not None:
+            raw_pipeline = raw_pipeline.split("-")
+            input_names = raw_pipeline.pop(0).split(",")
+            output_names = raw_pipeline.pop().split(",")
+            assistant_names = raw_pipeline.split(",") if len(raw_pipeline) > 0 else []
+        else:
+            input_names = inputs if inputs is not None else []
+            output_names = outputs if outputs is not None else []
+            assistant_names = assistants if assistants is not None else []
 
-        raw_pipeline = pipeline.split("-")
-        input_modules = raw_pipeline.pop(0).split(",")
-        output = raw_pipeline.pop().split(",")
-        in_between = raw_pipeline
+        # remove empty strings and duplicates
+        input_names = list(set([item for item in input_names if item != ""]))
+        assistant_names = list(set([item for item in assistant_names if item != ""]))
+        output_names = list(set([item for item in output_names if item != ""]))
 
-        self.input_plugins = input_modules
-        self.assistant_plugins = in_between
-        self.output_plugins = output
+        # Concatenate all plugins into a single list
+        all_plugins = input_names + assistant_names + output_names
 
-        return self
+        # remove empty strings
+        registry = Registry()
+        plugin_set = registry.active_plugins(names=all_plugins)
 
-    @property
-    def all_visible_modules(self) -> list[str]:
-        """Returns all visible modules in the pipeline.
+        self.input_plugins = [plugin for plugin in plugin_set if plugin.name in input_names]
+        self.assistant_plugins = [plugin for plugin in plugin_set if plugin.name in assistant_names]
+        self.output_plugins = [plugin for plugin in plugin_set if plugin.name in output_names]
+        self.all_modules = list(plugin_set)
 
-        Returns:
-            list[str]: All modules in the pipeline.
+        #super().__init__(input_plugins=self.input_plugins, assistant_plugins=self.assistant_plugins, output_plugins=self.output_plugins)
+        logger.trace(
+            f"Pipeline created with {len(input_names)} input plugins, {len(assistant_names)} assistant plugins, and {len(output_names)} output plugins.",
+            extra={"input_plugins": input_names, "assistant_plugins": assistant_names, "output_plugins": output_names},
+        )
+
+    def execute(self, config: dict = None) -> None:
+        """Execute the pipeline.
+
+        Args:
+            pipeline (Pipeline): The pipeline to execute.
+            config (dict): The configuration to load the plugins with.
         """
-        return self.input_plugins + self.assistant_plugins + self.output_plugins
+        registry = Registry()
+
+        # get the plugins in the pipeline
+        still_needed = registry.load_multiple_plugins(self.all_modules, config)  # load the plugins
+
+        if still_needed is not None:
+            return still_needed
+        
+        input_plugins = self.input_plugins
+        assistant_plugins = self.assistant_plugins
+        output_plugins = self.output_plugins
+
+        results = []  # store the results of the pipeline
+        # process the input plugins
+        logger.info(f"Processing {len(input_plugins)} input plugins")
+        for plugin in input_plugins:
+            result = registry.handlers[plugin.type].process_plugin(plugin, [], self.all_modules)  # dispatch the plugin to handler
+            results.append(result)
+
+        # process the assistant plugins, if any
+        if len(assistant_plugins) == 0:
+            logger.info("No assistant plugins found, skipping")
+            assistant_results = results  # skip assistant plugins
+        else:
+            logger.info(f"Processing {len(assistant_plugins)} assistant plugins")
+            assistant_results = []
+            for plugin in assistant_plugins:
+                mixed_results = assistant_results.copy()
+                for x in results:
+                    if x is type(list):
+                        for y in x:
+                            mixed_results.append(y)
+                    else:
+                        mixed_results.append(x)
+
+                # dispatch the plugin to handler
+                # uses progressivly more results as the pipeline progresses
+                result = registry.handlers[plugin.type].process_plugin(plugin, mixed_results, self)
+                if isinstance(result, list):
+                    for x in result:
+                        assistant_results.append(x)
+                else:
+                    assistant_results.append(result)
+
+        # process the output plugins
+        logger.info(f"Processing {len(output_plugins)} output plugins")
+        for plugin in output_plugins:
+            registry.handlers[plugin.type].process_plugin(plugin, assistant_results, self)  # dispatch the plugin to handler
+
+
+
 
 
 class Registry(metaclass=SingletonMeta):
@@ -138,8 +212,7 @@ class Registry(metaclass=SingletonMeta):
     _active = []
     _available = []
 
-    def __init__(self, flow: PluginFlow, plugin_dir: str | None = None, load_bundled: bool = True):
-        self.flow = flow
+    def __init__(self, plugin_dir: str | None = None, load_bundled: bool = True):
         self.load_bundled = load_bundled
         self.manager = pluggy.PluginManager(self.project_name)
         if plugin_dir is not None:
@@ -327,8 +400,7 @@ class Registry(metaclass=SingletonMeta):
         self._available = available
         return available
 
-    @property
-    def active_plugins(self) -> list[PluginInfo]:
+    def active_plugins(self, names: list[str]) -> list[PluginInfo]:
         """Get the active plugins in the plugin directory along with their configurations.
 
         Returns:
@@ -343,9 +415,10 @@ class Registry(metaclass=SingletonMeta):
         dependecies: set[PluginInfo] = set()
         uses: list[str] = []
 
-        pipeline_modules = set(self.flow.all_visible_modules)
+        # get the plugins in the pipeline
+        pipeline_modules = names
 
-        rebuilt_pipeline_str = ", ".join(self.flow.input_plugins) + ("-" + "-".join(self.flow.assistant_plugins) if self.flow.assistant_plugins else "") + "-" + "-".join(self.flow.output_plugins)
+        rebuilt_pipeline_str = "dummy"
         logger.trace(f"Starting first-pass plugin resolution for pipeline: {rebuilt_pipeline_str}")
 
         # get the plugins that are specifically requested for the pipeline
@@ -401,10 +474,6 @@ class Registry(metaclass=SingletonMeta):
         logger.debug(f"Computed {len(active)} active plugins")
         self._active = active
         return active
-
-    @active_plugins.setter
-    def active_plugins(self, value):
-        self._active = value
 
     # @logger.catch(reraise=True)
     def _grab_plugin_class(self, path: Path, plugin_info: PluginInfo) -> Any:
@@ -466,6 +535,46 @@ class Registry(metaclass=SingletonMeta):
                 extra={"Exception": str(e), "Traceback": traceback.format_exc()},
             )
             raise e
+
+    def load_multiple_plugins(self, plugins: list[PluginInfo], config: dict):
+        """Load the plugins with the provided configuration.
+
+        Args:
+            plugins (list[PluginInfo]): The plugins to load.
+            config (dict): The configuration to load the plugins with.
+        """
+        still_needed = []
+        for plugin in plugins:
+            try:
+                self.load_plugin(config, plugin)  # load the plugin
+            except ValidationError:  # missing fields
+                plugin_config_model = plugin.config
+                if plugin_config_model is None:
+                    # no needed fields
+                    continue
+                else:  # collect needed fields
+                    needed = [(name, plugin.name, info) for name, info in plugin_config_model.model_fields.items() if (name not in config) and (info.is_required)]
+                    still_needed.extend(needed)
+                continue
+
+        # return needed fields if any
+        if len(still_needed) > 0:
+            return still_needed
+        else:
+            return None
+
+    def grab_conf_models(self, plugins: list[PluginInfo]) -> list[BaseModel]:
+        """Grab the configuration models for the plugins.
+
+        Returns:
+            list[BaseModel]: List of configuration models for the plugins.
+        """
+        confs = []
+        for plugin in plugins:
+            if hasattr(plugin, "config"):
+                confs.append(plugin.config)
+
+        return confs
 
     # @logger.catch(reraise=True)
     def load_active_plugins(self, config: dict) -> list[tuple[str, str, Any]] | None:
