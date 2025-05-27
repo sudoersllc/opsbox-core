@@ -88,7 +88,8 @@ def generate_tools():
 def build():
     start_logging(log_level="TRACE", log_file="logue.log")
     generate_tools()
-    mcp1.run("sse")
+    #mcp1.run("sse")
+    mcp1.run()
     
 if __name__ == "__main__":
     build()
